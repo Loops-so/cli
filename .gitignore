@@ -2,6 +2,7 @@ node_modules/
 dist/
 *.log
 .env*
+!.env.example
 .DS_Store
 .task
 
