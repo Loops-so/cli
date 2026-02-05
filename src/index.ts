@@ -3,6 +3,7 @@
 import { Command } from "commander";
 import { config as loadDotenv } from "dotenv";
 import { loops, setConfig } from "./client";
+import { contactsCommand } from "./commands/contacts";
 
 const program = new Command();
 
@@ -35,12 +36,7 @@ program
     console.log(resp);
   });
 
-program
-  .command("contacts")
-  .description("Manage contacts")
-  .action(() => {
-    console.log("Contacts command - to be implemented");
-  });
+program.addCommand(contactsCommand);
 
 program
   .command("events")
