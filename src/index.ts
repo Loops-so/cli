@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from "commander";
+import { config as loadDotenv } from "dotenv";
 import { loops, setConfig } from "./client";
 
 const program = new Command();
@@ -14,8 +15,14 @@ program
     "API endpoint URL",
     "https://app.loops.so/api/",
   )
+  .option("--dotenv <path>", "Path to .env file")
   .hook("preAction", (cmd) => {
     const opts = cmd.optsWithGlobals();
+
+    if (opts.dotenv) {
+      loadDotenv({ path: opts.dotenv });
+    }
+
     setConfig({ endpointUrl: opts.endpointUrl });
   });
 
