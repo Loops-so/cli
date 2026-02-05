@@ -7,6 +7,7 @@ import { contactsCommand } from "./commands/contacts";
 import { contactPropertiesCommand } from "./commands/contactProperties";
 import { mailingListsCommand } from "./commands/mailingLists";
 import { eventsCommand } from "./commands/events";
+import { transactionalCommand } from "./commands/transactional";
 
 // putting LOOPS_ENDPOINT_URL in .env means that we need to load the file asap
 let dotenvPath: string | undefined;
@@ -61,5 +62,6 @@ program.addCommand(contactsCommand);
 program.addCommand(contactPropertiesCommand);
 program.addCommand(mailingListsCommand);
 program.addCommand(eventsCommand);
+program.addCommand(transactionalCommand);
 
 program.parse();
