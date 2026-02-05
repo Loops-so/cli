@@ -4,6 +4,7 @@ import { Command, Option } from "commander";
 import { config as loadDotenv } from "dotenv";
 import { loops, setConfig } from "./client";
 import { contactsCommand } from "./commands/contacts";
+import { contactPropertiesCommand } from "./commands/contactProperties";
 
 // putting LOOPS_ENDPOINT_URL in .env means that we need to load the file asap
 let dotenvPath: string | undefined;
@@ -55,6 +56,7 @@ program
   });
 
 program.addCommand(contactsCommand);
+program.addCommand(contactPropertiesCommand);
 
 program
   .command("events")
