@@ -95,3 +95,60 @@ contactsCommand
     const resp = await client.deleteContact(query);
     console.log(JSON.stringify(resp, null, 2));
   });
+
+contactsCommand
+  .command("update")
+  .description("Update a contact by email or user ID")
+  .option("-e, --email <email>", "Update by email address")
+  .option("-u, --user-id <userId>", "Update by user ID")
+  .option("--properties <json>", "Contact properties as JSON")
+  .option("--mailing-lists <json>", "Mailing list subscriptions as JSON")
+  .action(async (options) => {
+    const client = loops();
+
+    if (!options.email && !options.userId) {
+      console.error("Error: Either --email or --user-id is required");
+      process.exit(1);
+    }
+
+    if (options.email && options.userId) {
+      console.error("Error: Cannot specify both --email and --user-id");
+      process.exit(1);
+    }
+
+    const payload: {
+      email?: string;
+      userId?: string;
+      properties?: Record<string, unknown>;
+      mailingLists?: Record<string, boolean>;
+    } = {};
+
+    if (options.email) {
+      payload.email = options.email;
+    }
+
+    if (options.userId) {
+      payload.userId = options.userId;
+    }
+
+    if (options.properties) {
+      try {
+        payload.properties = JSON.parse(options.properties);
+      } catch (error) {
+        console.error("Error: Invalid JSON for --properties");
+        process.exit(1);
+      }
+    }
+
+    if (options.mailingLists) {
+      try {
+        payload.mailingLists = JSON.parse(options.mailingLists);
+      } catch (error) {
+        console.error("Error: Invalid JSON for --mailing-lists");
+        process.exit(1);
+      }
+    }
+
+    const resp = await client.updateContact(payload);
+    console.log(JSON.stringify(resp, null, 2));
+  });
