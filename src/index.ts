@@ -21,7 +21,7 @@ program
     const opts = cmd.optsWithGlobals();
 
     if (opts.dotenv) {
-      loadDotenv({ path: opts.dotenv });
+      loadDotenv({ path: opts.dotenv, quiet: true });
     }
 
     setConfig({ endpointUrl: opts.endpointUrl });
