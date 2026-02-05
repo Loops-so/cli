@@ -69,3 +69,29 @@ contactsCommand
     const resp = await client.createContact(payload);
     console.log(JSON.stringify(resp, null, 2));
   });
+
+contactsCommand
+  .command("delete")
+  .description("Delete a contact by email or user ID")
+  .option("-e, --email <email>", "Delete by email address")
+  .option("-u, --user-id <userId>", "Delete by user ID")
+  .action(async (options) => {
+    const client = loops();
+
+    if (!options.email && !options.userId) {
+      console.error("Error: Either --email or --user-id is required");
+      process.exit(1);
+    }
+
+    if (options.email && options.userId) {
+      console.error("Error: Cannot specify both --email and --user-id");
+      process.exit(1);
+    }
+
+    const query = options.email
+      ? { email: options.email }
+      : { userId: options.userId };
+
+    const resp = await client.deleteContact(query);
+    console.log(JSON.stringify(resp, null, 2));
+  });
