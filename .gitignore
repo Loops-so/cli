@@ -3,3 +3,10 @@ dist/
 *.log
 .env*
 .DS_Store
+.task
+
+# SEA related files
+dist-sea/
+loops-sea-prep.blob
+loops
+loops.exe

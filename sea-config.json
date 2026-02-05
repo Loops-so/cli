@@ -1,0 +1,7 @@
+{
+  "main": "dist-sea/index.js",
+  "output": "dist-sea/loops.blob",
+  "disableExperimentalSEAWarning": true,
+  "useSnapshot": false,
+  "useCodeCache": true
+}

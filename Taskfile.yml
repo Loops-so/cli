@@ -1,0 +1,32 @@
+# https://taskfile.dev
+
+version: "3"
+
+tasks:
+  build:sea:
+    desc: build the cli as an SEA
+    cmds:
+      - task: bundle
+      - task: blob
+      - node build-sea.js
+    silent: true
+
+  bundle:
+    cmds:
+      - npx tsup
+    sources:
+      - package*.json
+      - "**/*.ts"
+    generates:
+      - dist-sea/index.js
+
+  blob:
+    cmds:
+      - node --experimental-sea-config sea-config.json
+    sources:
+      - dist-sea/index.js
+    generates:
+      - dist-sea/loops.blob
+
+  clean:
+    - rm -rf ./loops ./loops.exe ./dist-sea
