@@ -5,6 +5,7 @@ import { config as loadDotenv } from "dotenv";
 import { loops, setConfig } from "./client";
 import { contactsCommand } from "./commands/contacts";
 import { contactPropertiesCommand } from "./commands/contactProperties";
+import { mailingListsCommand } from "./commands/mailingLists";
 
 // putting LOOPS_ENDPOINT_URL in .env means that we need to load the file asap
 let dotenvPath: string | undefined;
@@ -57,12 +58,6 @@ program
 
 program.addCommand(contactsCommand);
 program.addCommand(contactPropertiesCommand);
-
-program
-  .command("events")
-  .description("Manage events")
-  .action(() => {
-    console.log("Events command - to be implemented");
-  });
+program.addCommand(mailingListsCommand);
 
 program.parse();
