@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -26,11 +27,17 @@ var loginCmd = &cobra.Command{
 			return fmt.Errorf("API key cannot be empty")
 		}
 
+		client := api.NewClient(config.EndpointURL(), apiKey)
+		result, err := client.GetAPIKey()
+		if err != nil {
+			return fmt.Errorf("API key verification failed: %w", err)
+		}
+
 		if err := config.Save(apiKey); err != nil {
 			return err
 		}
 
-		fmt.Println("API key saved.")
+		fmt.Printf("API key saved. Authenticated as team: %s\n", result.TeamName)
 		return nil
 	},
 }

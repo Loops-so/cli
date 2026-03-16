@@ -19,9 +19,16 @@ type Config struct {
 	EndpointURL string
 }
 
+func EndpointURL() string {
+	if v := os.Getenv("LOOPS_ENDPOINT_URL"); v != "" {
+		return v
+	}
+	return DefaultEndpointURL
+}
+
 func Load() (*Config, error) {
 	cfg := &Config{
-		EndpointURL: DefaultEndpointURL,
+		EndpointURL: EndpointURL(),
 	}
 
 	apiKey, err := keyring.Get(keyringService, keyringUser)
@@ -32,9 +39,6 @@ func Load() (*Config, error) {
 
 	if v := os.Getenv("LOOPS_API_KEY"); v != "" {
 		cfg.APIKey = v
-	}
-	if v := os.Getenv("LOOPS_ENDPOINT_URL"); v != "" {
-		cfg.EndpointURL = v
 	}
 
 	if cfg.APIKey == "" {
