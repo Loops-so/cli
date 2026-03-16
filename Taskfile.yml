@@ -5,7 +5,7 @@ version: "3"
 tasks:
   default:
     cmds:
-      - go run ./... -- {{.CLI_ARGS}}
+      - go run ./... {{.CLI_ARGS}}
 
   deps:
     cmds:
