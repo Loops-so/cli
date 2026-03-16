@@ -1,34 +1,13 @@
 #!/usr/bin/env node
 
 import { Command, Option } from "commander";
-import { config as loadDotenv } from "dotenv";
 import { loops, setConfig } from "./client";
 import { contactsCommand } from "./commands/contacts";
 import { contactPropertiesCommand } from "./commands/contactProperties";
 import { mailingListsCommand } from "./commands/mailingLists";
 import { eventsCommand } from "./commands/events";
 import { transactionalCommand } from "./commands/transactional";
-
-// putting LOOPS_ENDPOINT_URL in .env means that we need to load the file asap
-let dotenvPath: string | undefined;
-
-const dotenvArgIndex = process.argv.indexOf("--dotenv");
-if (dotenvArgIndex !== -1 && process.argv[dotenvArgIndex + 1]) {
-  dotenvPath = process.argv[dotenvArgIndex + 1];
-} else {
-  const dotenvEquals = process.argv.find((arg) => arg.startsWith("--dotenv="));
-  if (dotenvEquals) {
-    dotenvPath = dotenvEquals.split("=")[1];
-  }
-}
-
-if (!dotenvPath) {
-  dotenvPath = process.env.LOOPS_DOTENV;
-}
-
-if (dotenvPath) {
-  loadDotenv({ path: dotenvPath, quiet: true });
-}
+import { loginCommand } from "./commands/login";
 
 const program = new Command();
 
@@ -42,11 +21,11 @@ program
       .default("https://app.loops.so/api/"),
   )
   .addOption(
-    new Option("--dotenv <path>", "Path to .env file").env("LOOPS_DOTENV"),
+    new Option("--api-key <key>", "API key (overrides stored and env keys)"),
   )
   .hook("preAction", (cmd) => {
     const opts = cmd.optsWithGlobals();
-    setConfig({ endpointUrl: opts.endpointUrl });
+    setConfig({ endpointUrl: opts.endpointUrl, apiKey: opts.apiKey });
   });
 
 program
@@ -58,6 +37,7 @@ program
     console.log(resp);
   });
 
+program.addCommand(loginCommand);
 program.addCommand(contactsCommand);
 program.addCommand(contactPropertiesCommand);
 program.addCommand(mailingListsCommand);

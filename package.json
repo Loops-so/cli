@@ -21,7 +21,6 @@
   "description": "CLI client for Loops API",
   "dependencies": {
     "commander": "^14.0.3",
-    "dotenv": "^17.2.3",
     "loops": "^6.1.2"
   },
   "devDependencies": {
