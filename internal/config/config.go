@@ -27,6 +27,32 @@ func Load() (*Config, error) {
 	return load(configPath)
 }
 
+func Save(apiKey string) error {
+	configPath, err := xdg.ConfigFile("loops/loops.toml")
+	if err != nil {
+		return fmt.Errorf("could not determine config path: %w", err)
+	}
+	return saveToPath(configPath, apiKey)
+}
+
+func saveToPath(configPath string, apiKey string) error {
+	f, err := os.OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return fmt.Errorf("could not write config file: %w", err)
+	}
+	defer f.Close()
+
+	if err := f.Chmod(0600); err != nil {
+		return fmt.Errorf("could not set config file permissions: %w", err)
+	}
+
+	return toml.NewEncoder(f).Encode(fileConfig{
+		Config: struct {
+			APIKey string `toml:"api-key"`
+		}{APIKey: apiKey},
+	})
+}
+
 func load(configPath string) (*Config, error) {
 	cfg := &Config{
 		EndpointURL: DefaultEndpointURL,
