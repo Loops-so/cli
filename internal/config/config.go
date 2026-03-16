@@ -5,66 +5,30 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/BurntSushi/toml"
-	"github.com/adrg/xdg"
+	"github.com/zalando/go-keyring"
 )
 
-const DefaultEndpointURL = "https://app.loops.so/api/v1"
+const (
+	DefaultEndpointURL = "https://app.loops.so/api/v1"
+	keyringService     = "loops"
+	keyringUser        = "api-key"
+)
 
 type Config struct {
 	APIKey      string
 	EndpointURL string
 }
 
-type fileConfig struct {
-	Config struct {
-		APIKey string `toml:"api-key"`
-	} `toml:"config"`
-}
-
 func Load() (*Config, error) {
-	configPath, _ := xdg.SearchConfigFile("loops/loops.toml")
-	return load(configPath)
-}
-
-func Save(apiKey string) error {
-	configPath, err := xdg.ConfigFile("loops/loops.toml")
-	if err != nil {
-		return fmt.Errorf("could not determine config path: %w", err)
-	}
-	return saveToPath(configPath, apiKey)
-}
-
-func saveToPath(configPath string, apiKey string) error {
-	f, err := os.OpenFile(configPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		return fmt.Errorf("could not write config file: %w", err)
-	}
-	defer f.Close()
-
-	if err := f.Chmod(0600); err != nil {
-		return fmt.Errorf("could not set config file permissions: %w", err)
-	}
-
-	return toml.NewEncoder(f).Encode(fileConfig{
-		Config: struct {
-			APIKey string `toml:"api-key"`
-		}{APIKey: apiKey},
-	})
-}
-
-func load(configPath string) (*Config, error) {
 	cfg := &Config{
 		EndpointURL: DefaultEndpointURL,
 	}
 
-	if configPath != "" {
-		var fc fileConfig
-		if _, err := toml.DecodeFile(configPath, &fc); err != nil {
-			return nil, fmt.Errorf("failed to read config file: %w", err)
-		}
-		cfg.APIKey = fc.Config.APIKey
+	apiKey, err := keyring.Get(keyringService, keyringUser)
+	if err != nil && !errors.Is(err, keyring.ErrNotFound) {
+		return nil, fmt.Errorf("could not read keyring: %w", err)
 	}
+	cfg.APIKey = apiKey
 
 	if v := os.Getenv("LOOPS_API_KEY"); v != "" {
 		cfg.APIKey = v
@@ -78,4 +42,8 @@ func load(configPath string) (*Config, error) {
 	}
 
 	return cfg, nil
+}
+
+func Save(apiKey string) error {
+	return keyring.Set(keyringService, keyringUser, apiKey)
 }

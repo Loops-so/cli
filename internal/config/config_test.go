@@ -1,127 +1,50 @@
 package config
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
 	"testing"
+
+	"github.com/zalando/go-keyring"
 )
 
-func writeConfigFile(t *testing.T, content string) string {
+func setup(t *testing.T) {
 	t.Helper()
-	dir := t.TempDir()
-	path := filepath.Join(dir, "loops.toml")
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-	return path
-}
-
-func TestSave(t *testing.T) {
-	t.Run("writes api key to file", func(t *testing.T) {
-		path := filepath.Join(t.TempDir(), "loops.toml")
-
-		if err := saveToPath(path, "my-key"); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		data, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatalf("could not read file: %v", err)
-		}
-		got := string(data)
-		if !strings.Contains(got, `api-key = "my-key"`) {
-			t.Errorf("file content missing api-key, got:\n%s", got)
-		}
-	})
-
-	t.Run("sets 0600 permissions on new file", func(t *testing.T) {
-		path := filepath.Join(t.TempDir(), "loops.toml")
-
-		if err := saveToPath(path, "my-key"); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		info, err := os.Stat(path)
-		if err != nil {
-			t.Fatalf("could not stat file: %v", err)
-		}
-		if info.Mode().Perm() != 0600 {
-			t.Errorf("got permissions %o, want %o", info.Mode().Perm(), 0600)
-		}
-	})
-
-	t.Run("sets 0600 permissions on existing file with wrong perms", func(t *testing.T) {
-		path := filepath.Join(t.TempDir(), "loops.toml")
-		if err := os.WriteFile(path, []byte{}, 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		if err := saveToPath(path, "my-key"); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		info, err := os.Stat(path)
-		if err != nil {
-			t.Fatalf("could not stat file: %v", err)
-		}
-		if info.Mode().Perm() != 0600 {
-			t.Errorf("got permissions %o, want %o", info.Mode().Perm(), 0600)
-		}
-	})
-
-	t.Run("overwrites existing api key", func(t *testing.T) {
-		path := writeConfigFile(t, "[config]\napi-key = \"old-key\"\n")
-
-		if err := saveToPath(path, "new-key"); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		data, err := os.ReadFile(path)
-		if err != nil {
-			t.Fatalf("could not read file: %v", err)
-		}
-		got := string(data)
-		if strings.Contains(got, "old-key") {
-			t.Errorf("old key still present in file:\n%s", got)
-		}
-		if !strings.Contains(got, `api-key = "new-key"`) {
-			t.Errorf("new key not found in file:\n%s", got)
-		}
-	})
+	keyring.MockInit()
 }
 
 func TestLoad(t *testing.T) {
 	t.Run("errors when no api key is set", func(t *testing.T) {
+		setup(t)
 		t.Setenv("LOOPS_API_KEY", "")
 		t.Setenv("LOOPS_ENDPOINT_URL", "")
 
-		_, err := load("")
+		_, err := Load()
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
 	})
 
-	t.Run("reads api key from config file", func(t *testing.T) {
-		path := writeConfigFile(t, "[config]\napi-key = \"file-key\"\n")
+	t.Run("reads api key from keyring", func(t *testing.T) {
+		setup(t)
+		keyring.Set(keyringService, keyringUser, "keyring-key")
 		t.Setenv("LOOPS_API_KEY", "")
 		t.Setenv("LOOPS_ENDPOINT_URL", "")
 
-		cfg, err := load(path)
+		cfg, err := Load()
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if cfg.APIKey != "file-key" {
-			t.Errorf("got %q, want %q", cfg.APIKey, "file-key")
+		if cfg.APIKey != "keyring-key" {
+			t.Errorf("got %q, want %q", cfg.APIKey, "keyring-key")
 		}
 	})
 
-	t.Run("env var overrides config file api key", func(t *testing.T) {
-		path := writeConfigFile(t, "[config]\napi-key = \"file-key\"\n")
+	t.Run("env var overrides keyring api key", func(t *testing.T) {
+		setup(t)
+		keyring.Set(keyringService, keyringUser, "keyring-key")
 		t.Setenv("LOOPS_API_KEY", "env-key")
 		t.Setenv("LOOPS_ENDPOINT_URL", "")
 
-		cfg, err := load(path)
+		cfg, err := Load()
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -131,10 +54,11 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("defaults endpoint URL", func(t *testing.T) {
+		setup(t)
 		t.Setenv("LOOPS_API_KEY", "some-key")
 		t.Setenv("LOOPS_ENDPOINT_URL", "")
 
-		cfg, err := load("")
+		cfg, err := Load()
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -144,10 +68,11 @@ func TestLoad(t *testing.T) {
 	})
 
 	t.Run("env var overrides endpoint URL", func(t *testing.T) {
+		setup(t)
 		t.Setenv("LOOPS_API_KEY", "some-key")
 		t.Setenv("LOOPS_ENDPOINT_URL", "https://custom.example.com/api")
 
-		cfg, err := load("")
+		cfg, err := Load()
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -155,14 +80,39 @@ func TestLoad(t *testing.T) {
 			t.Errorf("got %q, want %q", cfg.EndpointURL, "https://custom.example.com/api")
 		}
 	})
+}
 
-	t.Run("errors on malformed config file", func(t *testing.T) {
-		path := writeConfigFile(t, "not valid toml ][[[")
-		t.Setenv("LOOPS_API_KEY", "")
+func TestSave(t *testing.T) {
+	t.Run("stores api key in keyring", func(t *testing.T) {
+		setup(t)
 
-		_, err := load(path)
-		if err == nil {
-			t.Fatal("expected error, got nil")
+		if err := Save("my-key"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		got, err := keyring.Get(keyringService, keyringUser)
+		if err != nil {
+			t.Fatalf("could not read keyring: %v", err)
+		}
+		if got != "my-key" {
+			t.Errorf("got %q, want %q", got, "my-key")
+		}
+	})
+
+	t.Run("overwrites existing api key", func(t *testing.T) {
+		setup(t)
+		keyring.Set(keyringService, keyringUser, "old-key")
+
+		if err := Save("new-key"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		got, err := keyring.Get(keyringService, keyringUser)
+		if err != nil {
+			t.Fatalf("could not read keyring: %v", err)
+		}
+		if got != "new-key" {
+			t.Errorf("got %q, want %q", got, "new-key")
 		}
 	})
 }
