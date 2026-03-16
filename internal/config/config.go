@@ -47,3 +47,11 @@ func Load() (*Config, error) {
 func Save(apiKey string) error {
 	return keyring.Set(keyringService, keyringUser, apiKey)
 }
+
+func Delete() error {
+	err := keyring.Delete(keyringService, keyringUser)
+	if errors.Is(err, keyring.ErrNotFound) {
+		return nil
+	}
+	return err
+}

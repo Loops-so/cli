@@ -116,3 +116,27 @@ func TestSave(t *testing.T) {
 		}
 	})
 }
+
+func TestDelete(t *testing.T) {
+	t.Run("removes api key from keyring", func(t *testing.T) {
+		setup(t)
+		keyring.Set(keyringService, keyringUser, "my-key")
+
+		if err := Delete(); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		_, err := keyring.Get(keyringService, keyringUser)
+		if err != keyring.ErrNotFound {
+			t.Errorf("expected ErrNotFound, got %v", err)
+		}
+	})
+
+	t.Run("no error when no credentials stored", func(t *testing.T) {
+		setup(t)
+
+		if err := Delete(); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
