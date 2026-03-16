@@ -38,7 +38,7 @@ func Load() (*Config, error) {
 	}
 
 	if cfg.APIKey == "" {
-		return nil, errors.New("LOOPS_API_KEY is not set")
+		return nil, errors.New("LOOPS_API_KEY is not set and no stored API credentials were found")
 	}
 
 	return cfg, nil
