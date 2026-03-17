@@ -52,6 +52,67 @@ func TestNewRequest_InvalidURL(t *testing.T) {
 	}
 }
 
+func TestErrorFromResponse(t *testing.T) {
+	tests := []struct {
+		name        string
+		statusCode  int
+		body        string
+		wantMessage string
+	}{
+		{
+			name:        "reads error field",
+			statusCode:  http.StatusBadRequest,
+			body:        `{"error":"something went wrong"}`,
+			wantMessage: "something went wrong",
+		},
+		{
+			name:        "falls back to message field",
+			statusCode:  http.StatusBadRequest,
+			body:        `{"message":"something went wrong"}`,
+			wantMessage: "something went wrong",
+		},
+		{
+			name:        "prefers error over message",
+			statusCode:  http.StatusBadRequest,
+			body:        `{"error":"error field","message":"message field"}`,
+			wantMessage: "error field",
+		},
+		{
+			name:        "falls back to generic when body is empty",
+			statusCode:  http.StatusBadRequest,
+			body:        ``,
+			wantMessage: "unexpected status: 400",
+		},
+		{
+			name:        "falls back to generic when fields are absent",
+			statusCode:  http.StatusBadRequest,
+			body:        `{"success":false}`,
+			wantMessage: "unexpected status: 400",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			resp, err := http.Get(server.URL)
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			defer resp.Body.Close()
+
+			apiErr := errorFromResponse(resp)
+			if apiErr.Message != tt.wantMessage {
+				t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantMessage)
+			}
+		})
+	}
+}
+
 func TestDo_Retries(t *testing.T) {
 	origSleep := sleep
 	sleep = func(time.Duration) {}

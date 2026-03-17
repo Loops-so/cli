@@ -44,10 +44,16 @@ func NewClient(baseURL, apiKey string) *Client {
 
 func errorFromResponse(resp *http.Response) *APIError {
 	var body struct {
-		Error string `json:"error"`
+		Error   string `json:"error"`
+		Message string `json:"message"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err == nil && body.Error != "" {
-		return &APIError{StatusCode: resp.StatusCode, Message: body.Error}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err == nil {
+		if body.Error != "" {
+			return &APIError{StatusCode: resp.StatusCode, Message: body.Error}
+		}
+		if body.Message != "" {
+			return &APIError{StatusCode: resp.StatusCode, Message: body.Message}
+		}
 	}
 	return &APIError{StatusCode: resp.StatusCode, Message: fmt.Sprintf("unexpected status: %d", resp.StatusCode)}
 }
