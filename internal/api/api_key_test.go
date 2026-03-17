@@ -27,7 +27,7 @@ func TestGetAPIKey(t *testing.T) {
 			name:       "unauthorized",
 			statusCode: http.StatusUnauthorized,
 			body:       `{"success":false,"error":"Invalid API key"}`,
-			wantAPIErr: &APIError{StatusCode: http.StatusUnauthorized},
+			wantAPIErr: &APIError{StatusCode: http.StatusUnauthorized, Message: "Invalid API key"},
 		},
 		{
 			name:       "unexpected status",
@@ -61,6 +61,9 @@ func TestGetAPIKey(t *testing.T) {
 				}
 				if apiErr.StatusCode != tt.wantAPIErr.StatusCode {
 					t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, tt.wantAPIErr.StatusCode)
+				}
+				if tt.wantAPIErr.Message != "" && apiErr.Message != tt.wantAPIErr.Message {
+					t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantAPIErr.Message)
 				}
 				return
 			}

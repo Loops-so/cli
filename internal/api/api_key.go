@@ -22,12 +22,8 @@ func (c *Client) GetAPIKey() (*APIKeyResponse, error) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode == http.StatusUnauthorized {
-		return nil, &APIError{StatusCode: resp.StatusCode, Message: "invalid API key"}
-	}
-
 	if resp.StatusCode != http.StatusOK {
-		return nil, &APIError{StatusCode: resp.StatusCode, Message: fmt.Sprintf("unexpected status: %d", resp.StatusCode)}
+		return nil, errorFromResponse(resp)
 	}
 
 	var result APIKeyResponse
