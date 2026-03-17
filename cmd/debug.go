@@ -9,8 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var debugCmd = &cobra.Command{
-	Use:   "debug",
+var statusCmd = &cobra.Command{
+	Use:   "status",
 	Short: "Print the resolved configuration",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		cfg, err := config.Load()
@@ -29,5 +29,5 @@ var debugCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(debugCmd)
+	authCmd.AddCommand(statusCmd)
 }
