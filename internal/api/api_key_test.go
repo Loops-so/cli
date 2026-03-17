@@ -1,42 +1,45 @@
 package api
 
 import (
+	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
 func TestGetAPIKey(t *testing.T) {
 	tests := []struct {
-		name       string
-		statusCode int
-		body       string
-		wantErr    string
-		wantTeam   string
+		name          string
+		statusCode    int
+		body          string
+		wantAPIErr    *APIError
+		wantErrMsg    string
+		wantTeam      string
 	}{
 		{
 			name:       "success",
 			statusCode: http.StatusOK,
-			body:       `{"success":true,"teamName":"Acme"}`,
+			body:       `{"teamName":"Acme"}`,
 			wantTeam:   "Acme",
 		},
 		{
 			name:       "unauthorized",
 			statusCode: http.StatusUnauthorized,
 			body:       `{"success":false,"error":"Invalid API key"}`,
-			wantErr:    "invalid API key",
+			wantAPIErr: &APIError{StatusCode: http.StatusUnauthorized, Message: "Invalid API key"},
 		},
 		{
 			name:       "unexpected status",
 			statusCode: http.StatusInternalServerError,
 			body:       ``,
-			wantErr:    "unexpected status: 500",
+			wantAPIErr: &APIError{StatusCode: http.StatusInternalServerError},
 		},
 		{
 			name:       "invalid json",
 			statusCode: http.StatusOK,
 			body:       `not json`,
-			wantErr:    "failed to decode response",
+			wantErrMsg: "failed to decode response",
 		},
 	}
 
@@ -51,12 +54,26 @@ func TestGetAPIKey(t *testing.T) {
 			client := NewClient(server.URL, "test-key")
 			result, err := client.GetAPIKey()
 
-			if tt.wantErr != "" {
-				if err == nil {
-					t.Fatalf("expected error containing %q, got nil", tt.wantErr)
+			if tt.wantAPIErr != nil {
+				var apiErr *APIError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("expected *APIError, got %T: %v", err, err)
 				}
-				if !contains(err.Error(), tt.wantErr) {
-					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.wantErr)
+				if apiErr.StatusCode != tt.wantAPIErr.StatusCode {
+					t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, tt.wantAPIErr.StatusCode)
+				}
+				if tt.wantAPIErr.Message != "" && apiErr.Message != tt.wantAPIErr.Message {
+					t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantAPIErr.Message)
+				}
+				return
+			}
+
+			if tt.wantErrMsg != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tt.wantErrMsg)
+				}
+				if !strings.Contains(err.Error(), tt.wantErrMsg) {
+					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.wantErrMsg)
 				}
 				return
 			}
@@ -69,16 +86,4 @@ func TestGetAPIKey(t *testing.T) {
 			}
 		})
 	}
-}
-
-func contains(s, substr string) bool {
-	return len(s) >= len(substr) && (s == substr || len(substr) == 0 ||
-		func() bool {
-			for i := 0; i <= len(s)-len(substr); i++ {
-				if s[i:i+len(substr)] == substr {
-					return true
-				}
-			}
-			return false
-		}())
 }
