@@ -22,7 +22,7 @@ tasks:
 
   test:
     cmds:
-      - go test ./...
+      - go test ./... -cover
 
   vuln:
     cmds:
