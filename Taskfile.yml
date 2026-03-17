@@ -4,6 +4,8 @@ version: "3"
 
 tasks:
   default:
+    dotenv:
+      - .env.{{.ENV}}
     cmds:
       - go run ./... {{.CLI_ARGS}}
 
