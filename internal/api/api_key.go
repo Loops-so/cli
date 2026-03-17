@@ -7,7 +7,6 @@ import (
 )
 
 type APIKeyResponse struct {
-	Success  bool   `json:"success"`
 	TeamName string `json:"teamName"`
 }
 
