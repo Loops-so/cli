@@ -9,6 +9,7 @@ tasks:
       - .env.{{.ENV}}
     cmds:
       - go run ./... {{.CLI_ARGS}}
+    silent: true
 
   deps:
     cmds:
