@@ -18,3 +18,7 @@ tasks:
   test:
     cmds:
       - go test ./...
+
+  vuln:
+    cmds:
+      - go tool govulncheck {{.CLI_ARGS}} ./...
