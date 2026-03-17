@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,6 +13,37 @@ type TransactionalEmail struct {
 	Name          string   `json:"name"`
 	LastUpdated   string   `json:"lastUpdated"`
 	DataVariables []string `json:"dataVariables"`
+}
+
+type SendTransactionalRequest struct {
+	Email           string         `json:"email"`
+	TransactionalID string         `json:"transactionalId"`
+	AddToAudience   *bool          `json:"addToAudience,omitempty"`
+	DataVariables   map[string]any `json:"dataVariables,omitempty"`
+}
+
+func (c *Client) SendTransactional(req SendTransactionalRequest) error {
+	b, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("failed to encode request: %w", err)
+	}
+
+	httpReq, err := c.newRequest(http.MethodPost, "/transactional", bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.do(httpReq)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errorFromResponse(resp)
+	}
+
+	return nil
 }
 
 func (c *Client) ListTransactional(params PaginationParams) ([]TransactionalEmail, *Pagination, error) {
@@ -28,7 +60,7 @@ func (c *Client) ListTransactional(params PaginationParams) ([]TransactionalEmai
 		path += "?" + q.Encode()
 	}
 
-	req, err := c.newRequest(http.MethodGet, path)
+	req, err := c.newRequest(http.MethodGet, path, nil)
 	if err != nil {
 		return nil, nil, err
 	}

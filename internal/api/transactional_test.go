@@ -1,7 +1,9 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -200,6 +202,150 @@ func TestListTransactional_QueryParams(t *testing.T) {
 			}
 			if gotCursor != tt.wantCursor {
 				t.Errorf("cursor = %q, want %q", gotCursor, tt.wantCursor)
+			}
+		})
+	}
+}
+
+func TestSendTransactional(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		body       string
+		wantAPIErr *APIError
+		wantErrMsg string
+	}{
+		{
+			name:       "success",
+			statusCode: http.StatusOK,
+			body:       `{"success":true}`,
+		},
+		{
+			name:       "unauthorized",
+			statusCode: http.StatusUnauthorized,
+			body:       `{"message":"Invalid API key"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusUnauthorized, Message: "Invalid API key"},
+		},
+		{
+			name:       "not found",
+			statusCode: http.StatusNotFound,
+			body:       `{"message":"Transactional email not found"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusNotFound, Message: "Transactional email not found"},
+		},
+		{
+			name:       "bad request",
+			statusCode: http.StatusBadRequest,
+			body:       `{"message":"Recipient email is required"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "Recipient email is required"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			client := NewClient(server.URL, "test-key")
+			err := client.SendTransactional(SendTransactionalRequest{
+				Email:           "test@example.com",
+				TransactionalID: "abc123",
+			})
+
+			if tt.wantAPIErr != nil {
+				var apiErr *APIError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("expected *APIError, got %T: %v", err, err)
+				}
+				if apiErr.StatusCode != tt.wantAPIErr.StatusCode {
+					t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, tt.wantAPIErr.StatusCode)
+				}
+				if tt.wantAPIErr.Message != "" && apiErr.Message != tt.wantAPIErr.Message {
+					t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantAPIErr.Message)
+				}
+				return
+			}
+
+			if tt.wantErrMsg != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tt.wantErrMsg)
+				}
+				if !strings.Contains(err.Error(), tt.wantErrMsg) {
+					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.wantErrMsg)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
+func TestSendTransactional_RequestBody(t *testing.T) {
+	addToAudience := true
+	tests := []struct {
+		name         string
+		req          SendTransactionalRequest
+		wantEmail    string
+		wantID       string
+		wantAudience *bool
+		wantVars     map[string]any
+	}{
+		{
+			name:      "required fields only",
+			req:       SendTransactionalRequest{Email: "a@b.com", TransactionalID: "abc"},
+			wantEmail: "a@b.com",
+			wantID:    "abc",
+		},
+		{
+			name:         "with add-to-audience",
+			req:          SendTransactionalRequest{Email: "a@b.com", TransactionalID: "abc", AddToAudience: &addToAudience},
+			wantEmail:    "a@b.com",
+			wantID:       "abc",
+			wantAudience: &addToAudience,
+		},
+		{
+			name:      "with data variables",
+			req:       SendTransactionalRequest{Email: "a@b.com", TransactionalID: "abc", DataVariables: map[string]any{"name": "Alice"}},
+			wantEmail: "a@b.com",
+			wantID:    "abc",
+			wantVars:  map[string]any{"name": "Alice"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var got SendTransactionalRequest
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				b, _ := io.ReadAll(r.Body)
+				json.Unmarshal(b, &got)
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"success":true}`))
+			}))
+			defer server.Close()
+
+			client := NewClient(server.URL, "test-key")
+			client.SendTransactional(tt.req)
+
+			if got.Email != tt.wantEmail {
+				t.Errorf("email = %q, want %q", got.Email, tt.wantEmail)
+			}
+			if got.TransactionalID != tt.wantID {
+				t.Errorf("transactionalId = %q, want %q", got.TransactionalID, tt.wantID)
+			}
+			if tt.wantAudience != nil {
+				if got.AddToAudience == nil || *got.AddToAudience != *tt.wantAudience {
+					t.Errorf("addToAudience = %v, want %v", got.AddToAudience, tt.wantAudience)
+				}
+			}
+			if tt.wantVars != nil {
+				if got.DataVariables["name"] != tt.wantVars["name"] {
+					t.Errorf("dataVariables = %v, want %v", got.DataVariables, tt.wantVars)
+				}
 			}
 		})
 	}

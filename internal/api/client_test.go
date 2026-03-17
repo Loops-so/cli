@@ -22,7 +22,7 @@ func TestNewRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req, err := client.newRequest(tt.method, tt.path)
+			req, err := client.newRequest(tt.method, tt.path, nil)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
@@ -46,7 +46,7 @@ func TestNewRequest(t *testing.T) {
 
 func TestNewRequest_InvalidURL(t *testing.T) {
 	client := NewClient("://bad-url", "test-key")
-	_, err := client.newRequest(http.MethodGet, "/path")
+	_, err := client.newRequest(http.MethodGet, "/path", nil)
 	if err == nil {
 		t.Error("expected error for invalid URL, got nil")
 	}
@@ -168,7 +168,7 @@ func TestDo_Retries(t *testing.T) {
 			defer server.Close()
 
 			client := NewClient(server.URL, "test-key")
-			req, _ := client.newRequest(http.MethodGet, "/")
+			req, _ := client.newRequest(http.MethodGet, "/", nil)
 			resp, err := client.do(req)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)

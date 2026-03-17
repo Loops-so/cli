@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -59,8 +60,56 @@ var transactionalListCmd = &cobra.Command{
 	},
 }
 
+var transactionalSendCmd = &cobra.Command{
+	Use:   "send",
+	Short: "Send a transactional email",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := config.Load()
+		if err != nil {
+			return err
+		}
+
+		email, _ := cmd.Flags().GetString("email")
+		id, _ := cmd.Flags().GetString("id")
+		dataRaw, _ := cmd.Flags().GetString("data")
+
+		req := api.SendTransactionalRequest{
+			Email:           email,
+			TransactionalID: id,
+		}
+
+		if cmd.Flags().Changed("add-to-audience") {
+			v, _ := cmd.Flags().GetBool("add-to-audience")
+			req.AddToAudience = &v
+		}
+
+		if dataRaw != "" {
+			if err := json.Unmarshal([]byte(dataRaw), &req.DataVariables); err != nil {
+				return fmt.Errorf("--data must be a valid JSON object: %w", err)
+			}
+		}
+
+		client := api.NewClient(cfg.EndpointURL, cfg.APIKey)
+		if err := client.SendTransactional(req); err != nil {
+			return err
+		}
+
+		fmt.Println("Sent.")
+		return nil
+	},
+}
+
 func init() {
 	addPaginationFlags(transactionalListCmd)
 	transactionalCmd.AddCommand(transactionalListCmd)
+
+	transactionalSendCmd.Flags().String("email", "", "Recipient email address")
+	transactionalSendCmd.Flags().String("id", "", "Transactional email ID")
+	transactionalSendCmd.Flags().BoolP("add-to-audience", "a", false, "Create a contact if one doesn't exist")
+	transactionalSendCmd.Flags().String("data", "", "Data variables as a JSON object")
+	transactionalSendCmd.MarkFlagRequired("email")
+	transactionalSendCmd.MarkFlagRequired("id")
+	transactionalCmd.AddCommand(transactionalSendCmd)
+
 	rootCmd.AddCommand(transactionalCmd)
 }

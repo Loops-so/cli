@@ -11,7 +11,7 @@ type APIKeyResponse struct {
 }
 
 func (c *Client) GetAPIKey() (*APIKeyResponse, error) {
-	req, err := c.newRequest(http.MethodGet, "/api-key")
+	req, err := c.newRequest(http.MethodGet, "/api-key", nil)
 	if err != nil {
 		return nil, err
 	}
