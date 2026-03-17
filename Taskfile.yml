@@ -12,6 +12,8 @@ tasks:
       - go mod tidy
 
   build:
+    deps:
+      - deps
     cmds:
       - go build -o dist/loops
 
