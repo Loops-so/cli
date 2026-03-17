@@ -1,9 +1,12 @@
 package cmd
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 	"text/tabwriter"
 
@@ -11,6 +14,33 @@ import (
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
+
+func attachmentFromPath(path string) (api.Attachment, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return api.Attachment{}, fmt.Errorf("attachment %q: %w", path, err)
+	}
+	if info.IsDir() {
+		return api.Attachment{}, fmt.Errorf("attachment %q: is a directory", path)
+	}
+
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return api.Attachment{}, fmt.Errorf("attachment %q: %w", path, err)
+	}
+
+	sniff := data
+	if len(sniff) > 512 {
+		sniff = sniff[:512]
+	}
+	contentType := http.DetectContentType(sniff)
+
+	return api.Attachment{
+		Filename:    filepath.Base(path),
+		ContentType: contentType,
+		Data:        base64.StdEncoding.EncodeToString(data),
+	}, nil
+}
 
 var transactionalCmd = &cobra.Command{
 	Use:   "transactional",
@@ -89,6 +119,15 @@ var transactionalSendCmd = &cobra.Command{
 			}
 		}
 
+		paths, _ := cmd.Flags().GetStringArray("attachment")
+		for _, path := range paths {
+			a, err := attachmentFromPath(path)
+			if err != nil {
+				return err
+			}
+			req.Attachments = append(req.Attachments, a)
+		}
+
 		client := api.NewClient(cfg.EndpointURL, cfg.APIKey)
 		if err := client.SendTransactional(req); err != nil {
 			return err
@@ -107,6 +146,7 @@ func init() {
 	transactionalSendCmd.Flags().String("id", "", "Transactional email ID")
 	transactionalSendCmd.Flags().BoolP("add-to-audience", "a", false, "Create a contact if one doesn't exist")
 	transactionalSendCmd.Flags().String("data", "", "Data variables as a JSON object")
+	transactionalSendCmd.Flags().StringArrayP("attachment", "A", nil, "Path to a file to attach (repeatable)")
 	transactionalSendCmd.MarkFlagRequired("email")
 	transactionalSendCmd.MarkFlagRequired("id")
 	transactionalCmd.AddCommand(transactionalSendCmd)

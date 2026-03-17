@@ -15,11 +15,18 @@ type TransactionalEmail struct {
 	DataVariables []string `json:"dataVariables"`
 }
 
+type Attachment struct {
+	Filename    string `json:"filename"`
+	ContentType string `json:"contentType"`
+	Data        string `json:"data"`
+}
+
 type SendTransactionalRequest struct {
 	Email           string         `json:"email"`
 	TransactionalID string         `json:"transactionalId"`
 	AddToAudience   *bool          `json:"addToAudience,omitempty"`
 	DataVariables   map[string]any `json:"dataVariables,omitempty"`
+	Attachments     []Attachment   `json:"attachments,omitempty"`
 }
 
 func (c *Client) SendTransactional(req SendTransactionalRequest) error {
