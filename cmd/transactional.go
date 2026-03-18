@@ -78,15 +78,15 @@ var transactionalListCmd = &cobra.Command{
 			if emails == nil {
 				emails = []api.TransactionalEmail{}
 			}
-			return printJSON(emails)
+			return printJSON(cmd.OutOrStdout(), emails)
 		}
 
 		if len(emails) == 0 {
-			fmt.Println("No transactional emails found.")
+			fmt.Fprintln(cmd.OutOrStdout(), "No transactional emails found.")
 			return nil
 		}
 
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
 		fmt.Fprintln(w, "ID\tNAME\tLAST UPDATED\tVARIABLES")
 		for _, e := range emails {
 			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", e.ID, e.Name, e.LastUpdated, strings.Join(e.DataVariables, ", "))
@@ -141,9 +141,9 @@ var transactionalSendCmd = &cobra.Command{
 		}
 
 		if isJSONOutput() {
-			return printJSON(Result{Success: true})
+			return printJSON(cmd.OutOrStdout(), Result{Success: true})
 		}
-		fmt.Println("Sent.")
+		fmt.Fprintln(cmd.OutOrStdout(), "Sent.")
 		return nil
 	},
 }

@@ -15,9 +15,9 @@ var logoutCmd = &cobra.Command{
 			return err
 		}
 		if isJSONOutput() {
-			return printJSON(Result{Success: true})
+			return printJSON(cmd.OutOrStdout(), Result{Success: true})
 		}
-		fmt.Println("Logged out.")
+		fmt.Fprintln(cmd.OutOrStdout(), "Logged out.")
 		return nil
 	},
 }

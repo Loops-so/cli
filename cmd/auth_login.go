@@ -38,9 +38,9 @@ var loginCmd = &cobra.Command{
 		}
 
 		if isJSONOutput() {
-			return printJSON(Result{Success: true, Message: fmt.Sprintf("Authenticated as team: %s", result.TeamName)})
+			return printJSON(cmd.OutOrStdout(), Result{Success: true, Message: fmt.Sprintf("Authenticated as team: %s", result.TeamName)})
 		}
-		fmt.Printf("API key saved. Authenticated as team: %s\n", result.TeamName)
+		fmt.Fprintf(cmd.OutOrStdout(), "API key saved. Authenticated as team: %s\n", result.TeamName)
 		return nil
 	},
 }

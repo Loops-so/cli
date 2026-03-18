@@ -17,11 +17,11 @@ var statusCmd = &cobra.Command{
 		}
 
 		if isJSONOutput() {
-			return printJSON(cfg)
+			return printJSON(cmd.OutOrStdout(), cfg)
 		}
 
-		fmt.Printf("API Key:  %s\n", cfg.APIKey)
-		fmt.Printf("Endpoint: %s\n", cfg.EndpointURL)
+		fmt.Fprintf(cmd.OutOrStdout(), "API Key:  %s\n", cfg.APIKey)
+		fmt.Fprintf(cmd.OutOrStdout(), "Endpoint: %s\n", cfg.EndpointURL)
 		return nil
 	},
 }
