@@ -5,9 +5,11 @@ version: "3"
 tasks:
   default:
     dotenv:
+      - .env
       - .env.{{.ENV}}
     cmds:
       - go run ./... {{.CLI_ARGS}}
+    silent: true
 
   deps:
     cmds:
@@ -21,7 +23,7 @@ tasks:
 
   test:
     cmds:
-      - go test ./...
+      - go test ./... -cover
 
   vuln:
     cmds:

@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/rand/v2"
 	"net/http"
 	"time"
@@ -44,10 +45,16 @@ func NewClient(baseURL, apiKey string) *Client {
 
 func errorFromResponse(resp *http.Response) *APIError {
 	var body struct {
-		Error string `json:"error"`
+		Error   string `json:"error"`
+		Message string `json:"message"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err == nil && body.Error != "" {
-		return &APIError{StatusCode: resp.StatusCode, Message: body.Error}
+	if err := json.NewDecoder(resp.Body).Decode(&body); err == nil {
+		if body.Error != "" {
+			return &APIError{StatusCode: resp.StatusCode, Message: body.Error}
+		}
+		if body.Message != "" {
+			return &APIError{StatusCode: resp.StatusCode, Message: body.Message}
+		}
 	}
 	return &APIError{StatusCode: resp.StatusCode, Message: fmt.Sprintf("unexpected status: %d", resp.StatusCode)}
 }
@@ -83,12 +90,15 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 	return resp, nil
 }
 
-func (c *Client) newRequest(method, path string) (*http.Request, error) {
+func (c *Client) newRequest(method, path string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s", c.baseURL, path)
-	req, err := http.NewRequest(method, url, nil)
+	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	return req, nil
 }
