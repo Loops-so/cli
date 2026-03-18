@@ -14,6 +14,9 @@ var logoutCmd = &cobra.Command{
 		if err := config.Delete(); err != nil {
 			return err
 		}
+		if isJSONOutput() {
+			return printJSON(Result{Success: true})
+		}
 		fmt.Println("Logged out.")
 		return nil
 	},

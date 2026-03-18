@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var outputFormat outputFlag = "text"
+
 var rootCmd = &cobra.Command{
 	Use:   "loops",
 	Short: "The official CLI for Loops (https://loops.so)",
@@ -36,5 +38,5 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	rootCmd.PersistentFlags().VarP(&outputFormat, "output", "o", "Output format (text, json)")
 }

@@ -23,6 +23,9 @@ var apiKeyCmd = &cobra.Command{
 			return err
 		}
 
+		if isJSONOutput() {
+			return printJSON(result)
+		}
 		fmt.Printf("Valid API key for team: %s\n", result.TeamName)
 		return nil
 	},
