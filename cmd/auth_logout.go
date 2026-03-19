@@ -11,7 +11,7 @@ var logoutCmd = &cobra.Command{
 	Use:   "logout",
 	Short: "Remove stored Loops credentials",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := config.Delete(); err != nil {
+		if err := runAuthLogout(); err != nil {
 			return err
 		}
 		if isJSONOutput() {
@@ -20,6 +20,10 @@ var logoutCmd = &cobra.Command{
 		fmt.Fprintln(cmd.OutOrStdout(), "Logged out.")
 		return nil
 	},
+}
+
+func runAuthLogout() error {
+	return config.Delete()
 }
 
 func init() {

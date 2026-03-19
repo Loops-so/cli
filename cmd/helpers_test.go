@@ -18,6 +18,11 @@ func cfg(t *testing.T) *config.Config {
 	return c
 }
 
+func mockKeyring(t *testing.T) {
+	t.Helper()
+	keyring.MockInit()
+}
+
 func serveJSON(t *testing.T, status int, body string) {
 	t.Helper()
 	keyring.MockInit()

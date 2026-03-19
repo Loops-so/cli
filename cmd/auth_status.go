@@ -11,7 +11,7 @@ var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Print the resolved configuration",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load()
+		cfg, err := runAuthStatus()
 		if err != nil {
 			return err
 		}
@@ -24,6 +24,10 @@ var statusCmd = &cobra.Command{
 		fmt.Fprintf(cmd.OutOrStdout(), "Endpoint: %s\n", cfg.EndpointURL)
 		return nil
 	},
+}
+
+func runAuthStatus() (*config.Config, error) {
+	return config.Load()
 }
 
 func init() {
