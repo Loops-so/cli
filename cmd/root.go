@@ -4,6 +4,7 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -12,12 +13,11 @@ import (
 var outputFormat outputFlag = "text"
 
 var rootCmd = &cobra.Command{
-	Use:   "loops",
-	Short: "The official CLI for Loops (https://loops.so)",
-	Long:  "The official CLI for Loops (https://loops.so)",
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	// Run: func(cmd *cobra.Command, args []string) { },
+	Use:           "loops",
+	Short:         "The official CLI for Loops (https://loops.so)",
+	Long:          "The official CLI for Loops (https://loops.so)",
+	SilenceErrors: true,
+	SilenceUsage:  true,
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -25,6 +25,11 @@ var rootCmd = &cobra.Command{
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
+		if isJSONOutput() {
+			printJSON(Result{Success: false, Message: err.Error()})
+		} else {
+			fmt.Fprintln(os.Stderr, "Error:", err)
+		}
 		os.Exit(1)
 	}
 }
