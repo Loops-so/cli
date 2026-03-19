@@ -1,12 +1,51 @@
 package api
 
 import (
+	"bytes"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 	"time"
 )
+
+func TestDo_RetryResetsBody(t *testing.T) {
+	origSleep := sleep
+	sleep = func(time.Duration) {}
+	defer func() { sleep = origSleep }()
+
+	var bodies []string
+	var attempts atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		bodies = append(bodies, string(b))
+		n := attempts.Add(1)
+		if n == 1 {
+			w.WriteHeader(http.StatusInternalServerError)
+		} else {
+			w.WriteHeader(http.StatusOK)
+		}
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key")
+	req, _ := client.newRequest(http.MethodPost, "/", bytes.NewReader([]byte(`{"hello":"world"}`)))
+	resp, err := client.do(req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if attempts.Load() != 2 {
+		t.Fatalf("expected 2 attempts, got %d", attempts.Load())
+	}
+	for i, body := range bodies {
+		if body != `{"hello":"world"}` {
+			t.Errorf("attempt %d body = %q, want non-empty JSON", i+1, body)
+		}
+	}
+}
 
 func TestNewRequest(t *testing.T) {
 	client := NewClient("https://example.com/api/v1", "test-key")
