@@ -66,6 +66,13 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 	)
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		if attempt > 0 {
+			if req.GetBody != nil {
+				body, err := req.GetBody()
+				if err != nil {
+					return nil, fmt.Errorf("failed to reset request body: %w", err)
+				}
+				req.Body = body
+			}
 			delay := time.Duration(1<<(attempt-1)) * baseDelay
 			jitter := time.Duration(rand.Int64N(int64(delay / 2)))
 			sleep(delay + jitter)
