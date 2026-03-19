@@ -42,6 +42,24 @@ func attachmentFromPath(path string) (api.Attachment, error) {
 	}, nil
 }
 
+func runTransactionalList(cfg *config.Config, params api.PaginationParams) ([]api.TransactionalEmail, error) {
+	client := api.NewClient(cfg.EndpointURL, cfg.APIKey)
+	if params.Cursor != "" {
+		emails, _, err := client.ListTransactional(params)
+		return emails, err
+	}
+	return api.Paginate(func(cursor string) ([]api.TransactionalEmail, *api.Pagination, error) {
+		return client.ListTransactional(api.PaginationParams{
+			PerPage: params.PerPage,
+			Cursor:  cursor,
+		})
+	})
+}
+
+func runTransactionalSend(cfg *config.Config, req api.SendTransactionalRequest) error {
+	return api.NewClient(cfg.EndpointURL, cfg.APIKey).SendTransactional(req)
+}
+
 var transactionalCmd = &cobra.Command{
 	Use:   "transactional",
 	Short: "Manage transactional emails",
@@ -57,19 +75,7 @@ var transactionalListCmd = &cobra.Command{
 		}
 
 		params := paginationParams(cmd)
-		client := api.NewClient(cfg.EndpointURL, cfg.APIKey)
-
-		var emails []api.TransactionalEmail
-		if params.Cursor != "" {
-			emails, _, err = client.ListTransactional(params)
-		} else {
-			emails, err = api.Paginate(func(cursor string) ([]api.TransactionalEmail, *api.Pagination, error) {
-				return client.ListTransactional(api.PaginationParams{
-					PerPage: params.PerPage,
-					Cursor:  cursor,
-				})
-			})
-		}
+		emails, err := runTransactionalList(cfg, params)
 		if err != nil {
 			return err
 		}
@@ -135,8 +141,7 @@ var transactionalSendCmd = &cobra.Command{
 			req.Attachments = append(req.Attachments, a)
 		}
 
-		client := api.NewClient(cfg.EndpointURL, cfg.APIKey)
-		if err := client.SendTransactional(req); err != nil {
+		if err := runTransactionalSend(cfg, req); err != nil {
 			return err
 		}
 
