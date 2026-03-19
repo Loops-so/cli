@@ -1,25 +1,21 @@
 package cmd
 
 import (
-	"bytes"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	"github.com/loops-so/cli/internal/config"
 	"github.com/zalando/go-keyring"
 )
 
-func runCmd(t *testing.T, args ...string) (string, error) {
+func cfg(t *testing.T) *config.Config {
 	t.Helper()
-	outputFormat = "text"
-	t.Cleanup(func() { outputFormat = "text" })
-
-	buf := &bytes.Buffer{}
-	rootCmd.SetOut(buf)
-	rootCmd.SetErr(&bytes.Buffer{})
-	rootCmd.SetArgs(args)
-	err := rootCmd.Execute()
-	return buf.String(), err
+	c, err := config.Load()
+	if err != nil {
+		t.Fatalf("config.Load: %v", err)
+	}
+	return c
 }
 
 func serveJSON(t *testing.T, status int, body string) {
