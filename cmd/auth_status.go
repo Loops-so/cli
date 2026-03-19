@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
 
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
@@ -18,12 +16,12 @@ var statusCmd = &cobra.Command{
 			return err
 		}
 
-		out, err := json.MarshalIndent(cfg, "", "  ")
-		if err != nil {
-			return err
+		if isJSONOutput() {
+			return printJSON(cfg)
 		}
 
-		fmt.Fprintln(os.Stdout, string(out))
+		fmt.Printf("API Key:  %s\n", cfg.APIKey)
+		fmt.Printf("Endpoint: %s\n", cfg.EndpointURL)
 		return nil
 	},
 }

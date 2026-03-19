@@ -74,6 +74,13 @@ var transactionalListCmd = &cobra.Command{
 			return err
 		}
 
+		if isJSONOutput() {
+			if emails == nil {
+				emails = []api.TransactionalEmail{}
+			}
+			return printJSON(emails)
+		}
+
 		if len(emails) == 0 {
 			fmt.Println("No transactional emails found.")
 			return nil
@@ -133,6 +140,9 @@ var transactionalSendCmd = &cobra.Command{
 			return err
 		}
 
+		if isJSONOutput() {
+			return printJSON(Result{Success: true})
+		}
 		fmt.Println("Sent.")
 		return nil
 	},
