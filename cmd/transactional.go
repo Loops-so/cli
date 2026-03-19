@@ -42,6 +42,24 @@ func attachmentFromPath(path string) (api.Attachment, error) {
 	}, nil
 }
 
+func runTransactionalList(cfg *config.Config, params api.PaginationParams) ([]api.TransactionalEmail, error) {
+	client := api.NewClient(cfg.EndpointURL, cfg.APIKey)
+	if params.Cursor != "" {
+		emails, _, err := client.ListTransactional(params)
+		return emails, err
+	}
+	return api.Paginate(func(cursor string) ([]api.TransactionalEmail, *api.Pagination, error) {
+		return client.ListTransactional(api.PaginationParams{
+			PerPage: params.PerPage,
+			Cursor:  cursor,
+		})
+	})
+}
+
+func runTransactionalSend(cfg *config.Config, req api.SendTransactionalRequest) error {
+	return api.NewClient(cfg.EndpointURL, cfg.APIKey).SendTransactional(req)
+}
+
 var transactionalCmd = &cobra.Command{
 	Use:   "transactional",
 	Short: "Manage transactional emails",
@@ -57,19 +75,7 @@ var transactionalListCmd = &cobra.Command{
 		}
 
 		params := paginationParams(cmd)
-		client := api.NewClient(cfg.EndpointURL, cfg.APIKey)
-
-		var emails []api.TransactionalEmail
-		if params.Cursor != "" {
-			emails, _, err = client.ListTransactional(params)
-		} else {
-			emails, err = api.Paginate(func(cursor string) ([]api.TransactionalEmail, *api.Pagination, error) {
-				return client.ListTransactional(api.PaginationParams{
-					PerPage: params.PerPage,
-					Cursor:  cursor,
-				})
-			})
-		}
+		emails, err := runTransactionalList(cfg, params)
 		if err != nil {
 			return err
 		}
@@ -78,15 +84,15 @@ var transactionalListCmd = &cobra.Command{
 			if emails == nil {
 				emails = []api.TransactionalEmail{}
 			}
-			return printJSON(emails)
+			return printJSON(cmd.OutOrStdout(), emails)
 		}
 
 		if len(emails) == 0 {
-			fmt.Println("No transactional emails found.")
+			fmt.Fprintln(cmd.OutOrStdout(), "No transactional emails found.")
 			return nil
 		}
 
-		w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+		w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
 		fmt.Fprintln(w, "ID\tNAME\tLAST UPDATED\tVARIABLES")
 		for _, e := range emails {
 			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", e.ID, e.Name, e.LastUpdated, strings.Join(e.DataVariables, ", "))
@@ -135,15 +141,14 @@ var transactionalSendCmd = &cobra.Command{
 			req.Attachments = append(req.Attachments, a)
 		}
 
-		client := api.NewClient(cfg.EndpointURL, cfg.APIKey)
-		if err := client.SendTransactional(req); err != nil {
+		if err := runTransactionalSend(cfg, req); err != nil {
 			return err
 		}
 
 		if isJSONOutput() {
-			return printJSON(Result{Success: true})
+			return printJSON(cmd.OutOrStdout(), Result{Success: true})
 		}
-		fmt.Println("Sent.")
+		fmt.Fprintln(cmd.OutOrStdout(), "Sent.")
 		return nil
 	},
 }

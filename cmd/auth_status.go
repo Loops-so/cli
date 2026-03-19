@@ -11,19 +11,23 @@ var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Print the resolved configuration",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load()
+		cfg, err := runAuthStatus()
 		if err != nil {
 			return err
 		}
 
 		if isJSONOutput() {
-			return printJSON(cfg)
+			return printJSON(cmd.OutOrStdout(), cfg)
 		}
 
-		fmt.Printf("API Key:  %s\n", cfg.APIKey)
-		fmt.Printf("Endpoint: %s\n", cfg.EndpointURL)
+		fmt.Fprintf(cmd.OutOrStdout(), "API Key:  %s\n", cfg.APIKey)
+		fmt.Fprintf(cmd.OutOrStdout(), "Endpoint: %s\n", cfg.EndpointURL)
 		return nil
 	},
+}
+
+func runAuthStatus() (*config.Config, error) {
+	return config.Load()
 }
 
 func init() {

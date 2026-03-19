@@ -27,22 +27,28 @@ var loginCmd = &cobra.Command{
 			return fmt.Errorf("API key cannot be empty")
 		}
 
-		client := api.NewClient(config.EndpointURL(), apiKey)
-		result, err := client.GetAPIKey()
+		result, err := runAuthLogin(apiKey)
 		if err != nil {
-			return fmt.Errorf("API key verification failed: %w", err)
-		}
-
-		if err := config.Save(apiKey); err != nil {
 			return err
 		}
 
 		if isJSONOutput() {
-			return printJSON(Result{Success: true, Message: fmt.Sprintf("Authenticated as team: %s", result.TeamName)})
+			return printJSON(cmd.OutOrStdout(), Result{Success: true, Message: fmt.Sprintf("Authenticated as team: %s", result.TeamName)})
 		}
-		fmt.Printf("API key saved. Authenticated as team: %s\n", result.TeamName)
+		fmt.Fprintf(cmd.OutOrStdout(), "API key saved. Authenticated as team: %s\n", result.TeamName)
 		return nil
 	},
+}
+
+func runAuthLogin(apiKey string) (*api.APIKeyResponse, error) {
+	result, err := api.NewClient(config.EndpointURL(), apiKey).GetAPIKey()
+	if err != nil {
+		return nil, fmt.Errorf("API key verification failed: %w", err)
+	}
+	if err := config.Save(apiKey); err != nil {
+		return nil, err
+	}
+	return result, nil
 }
 
 func init() {

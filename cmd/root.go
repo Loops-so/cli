@@ -26,7 +26,7 @@ func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
 		if isJSONOutput() {
-			printJSON(Result{Success: false, Message: err.Error()})
+			printJSON(os.Stderr, Result{Success: false, Message: err.Error()})
 		} else {
 			fmt.Fprintln(os.Stderr, "Error:", err)
 		}
