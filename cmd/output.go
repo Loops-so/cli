@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"text/tabwriter"
 )
 
 type outputFlag string
@@ -28,6 +29,10 @@ type Result struct {
 
 func isJSONOutput() bool {
 	return outputFormat == "json"
+}
+
+func newTableWriter(w io.Writer) *tabwriter.Writer {
+	return tabwriter.NewWriter(w, 0, 0, 2, ' ', 0)
 }
 
 func printJSON(w io.Writer, v any) error {
