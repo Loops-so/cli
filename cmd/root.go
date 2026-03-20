@@ -20,9 +20,24 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 }
 
+func fixHelpFlags(cmd *cobra.Command) {
+	cmd.InitDefaultHelpFlag()
+	if f := cmd.Flags().Lookup("help"); f != nil {
+		name := cmd.Name()
+		if name == "" {
+			name = "this command"
+		}
+		f.Usage = "Help for " + name
+	}
+	for _, sub := range cmd.Commands() {
+		fixHelpFlags(sub)
+	}
+}
+
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	fixHelpFlags(rootCmd)
 	err := rootCmd.Execute()
 	if err != nil {
 		if isJSONOutput() {
