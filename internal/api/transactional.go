@@ -27,6 +27,7 @@ type SendTransactionalRequest struct {
 	AddToAudience   *bool          `json:"addToAudience,omitempty"`
 	DataVariables   map[string]any `json:"dataVariables,omitempty"`
 	Attachments     []Attachment   `json:"attachments,omitempty"`
+	IdempotencyKey  string         `json:"-"`
 }
 
 func (c *Client) SendTransactional(req SendTransactionalRequest) error {
@@ -38,6 +39,9 @@ func (c *Client) SendTransactional(req SendTransactionalRequest) error {
 	httpReq, err := c.newRequest(http.MethodPost, "/transactional", bytes.NewReader(b))
 	if err != nil {
 		return err
+	}
+	if req.IdempotencyKey != "" {
+		httpReq.Header.Set("Idempotency-Key", req.IdempotencyKey)
 	}
 
 	resp, err := c.do(httpReq)

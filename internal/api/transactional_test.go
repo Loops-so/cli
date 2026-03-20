@@ -285,6 +285,54 @@ func TestSendTransactional(t *testing.T) {
 	}
 }
 
+func TestSendTransactional_IdempotencyKey(t *testing.T) {
+	tests := []struct {
+		name           string
+		idempotencyKey string
+		wantHeader     string
+	}{
+		{
+			name:           "sets header when provided",
+			idempotencyKey: "my-key-123",
+			wantHeader:     "my-key-123",
+		},
+		{
+			name:           "omits header when empty",
+			idempotencyKey: "",
+			wantHeader:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotHeader string
+			var body map[string]any
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotHeader = r.Header.Get("Idempotency-Key")
+				b, _ := io.ReadAll(r.Body)
+				json.Unmarshal(b, &body)
+				w.WriteHeader(http.StatusOK)
+				w.Write([]byte(`{"success":true}`))
+			}))
+			defer server.Close()
+
+			client := NewClient(server.URL, "test-key")
+			client.SendTransactional(SendTransactionalRequest{
+				Email:           "a@b.com",
+				TransactionalID: "abc",
+				IdempotencyKey:  tt.idempotencyKey,
+			})
+
+			if gotHeader != tt.wantHeader {
+				t.Errorf("Idempotency-Key header = %q, want %q", gotHeader, tt.wantHeader)
+			}
+			if _, ok := body["idempotencyKey"]; ok {
+				t.Error("idempotencyKey should not appear in request body")
+			}
+		})
+	}
+}
+
 func TestSendTransactional_RequestBody(t *testing.T) {
 	addToAudience := true
 	tests := []struct {

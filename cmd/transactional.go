@@ -112,10 +112,12 @@ func transactionalSendRunE(cmd *cobra.Command, args []string) error {
 	email, _ := cmd.Flags().GetString("email")
 	id, _ := cmd.Flags().GetString("id")
 	dataRaw, _ := cmd.Flags().GetString("data")
+	idempotencyKey, _ := cmd.Flags().GetString("idempotency-key")
 
 	req := api.SendTransactionalRequest{
 		Email:           email,
 		TransactionalID: id,
+		IdempotencyKey:  idempotencyKey,
 	}
 
 	if cmd.Flags().Changed("add-to-audience") {
@@ -155,6 +157,7 @@ func addTransactionalSendFlags(cmd *cobra.Command) {
 	cmd.Flags().BoolP("add-to-audience", "a", false, "Create a contact if one doesn't exist")
 	cmd.Flags().String("data", "", "Data variables as a JSON object")
 	cmd.Flags().StringArrayP("attachment", "A", nil, "Path to a file to attach (repeatable)")
+	cmd.Flags().String("idempotency-key", "", "Idempotency key to prevent duplicate sends")
 	cmd.MarkFlagRequired("email")
 	cmd.MarkFlagRequired("id")
 }
