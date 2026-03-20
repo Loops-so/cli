@@ -103,67 +103,73 @@ var transactionalListCmd = &cobra.Command{
 	},
 }
 
-var transactionalSendCmd = &cobra.Command{
-	Use:   "send",
-	Short: "Send a transactional email",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load()
+func transactionalSendRunE(cmd *cobra.Command, args []string) error {
+	cfg, err := config.Load()
+	if err != nil {
+		return err
+	}
+
+	email, _ := cmd.Flags().GetString("email")
+	id, _ := cmd.Flags().GetString("id")
+	dataRaw, _ := cmd.Flags().GetString("data")
+
+	req := api.SendTransactionalRequest{
+		Email:           email,
+		TransactionalID: id,
+	}
+
+	if cmd.Flags().Changed("add-to-audience") {
+		v, _ := cmd.Flags().GetBool("add-to-audience")
+		req.AddToAudience = &v
+	}
+
+	if dataRaw != "" {
+		if err := json.Unmarshal([]byte(dataRaw), &req.DataVariables); err != nil {
+			return fmt.Errorf("--data must be a valid JSON object: %w", err)
+		}
+	}
+
+	paths, _ := cmd.Flags().GetStringArray("attachment")
+	for _, path := range paths {
+		a, err := attachmentFromPath(path)
 		if err != nil {
 			return err
 		}
+		req.Attachments = append(req.Attachments, a)
+	}
 
-		email, _ := cmd.Flags().GetString("email")
-		id, _ := cmd.Flags().GetString("id")
-		dataRaw, _ := cmd.Flags().GetString("data")
+	if err := runTransactionalSend(cfg, req); err != nil {
+		return err
+	}
 
-		req := api.SendTransactionalRequest{
-			Email:           email,
-			TransactionalID: id,
-		}
+	if isJSONOutput() {
+		return printJSON(cmd.OutOrStdout(), Result{Success: true})
+	}
+	fmt.Fprintln(cmd.OutOrStdout(), "Sent.")
+	return nil
+}
 
-		if cmd.Flags().Changed("add-to-audience") {
-			v, _ := cmd.Flags().GetBool("add-to-audience")
-			req.AddToAudience = &v
-		}
+func addTransactionalSendFlags(cmd *cobra.Command) {
+	cmd.Flags().String("email", "", "Recipient email address")
+	cmd.Flags().String("id", "", "Transactional email ID")
+	cmd.Flags().BoolP("add-to-audience", "a", false, "Create a contact if one doesn't exist")
+	cmd.Flags().String("data", "", "Data variables as a JSON object")
+	cmd.Flags().StringArrayP("attachment", "A", nil, "Path to a file to attach (repeatable)")
+	cmd.MarkFlagRequired("email")
+	cmd.MarkFlagRequired("id")
+}
 
-		if dataRaw != "" {
-			if err := json.Unmarshal([]byte(dataRaw), &req.DataVariables); err != nil {
-				return fmt.Errorf("--data must be a valid JSON object: %w", err)
-			}
-		}
-
-		paths, _ := cmd.Flags().GetStringArray("attachment")
-		for _, path := range paths {
-			a, err := attachmentFromPath(path)
-			if err != nil {
-				return err
-			}
-			req.Attachments = append(req.Attachments, a)
-		}
-
-		if err := runTransactionalSend(cfg, req); err != nil {
-			return err
-		}
-
-		if isJSONOutput() {
-			return printJSON(cmd.OutOrStdout(), Result{Success: true})
-		}
-		fmt.Fprintln(cmd.OutOrStdout(), "Sent.")
-		return nil
-	},
+var transactionalSendCmd = &cobra.Command{
+	Use:   "send",
+	Short: "Send a transactional email",
+	RunE:  transactionalSendRunE,
 }
 
 func init() {
 	addPaginationFlags(transactionalListCmd)
 	transactionalCmd.AddCommand(transactionalListCmd)
 
-	transactionalSendCmd.Flags().String("email", "", "Recipient email address")
-	transactionalSendCmd.Flags().String("id", "", "Transactional email ID")
-	transactionalSendCmd.Flags().BoolP("add-to-audience", "a", false, "Create a contact if one doesn't exist")
-	transactionalSendCmd.Flags().String("data", "", "Data variables as a JSON object")
-	transactionalSendCmd.Flags().StringArrayP("attachment", "A", nil, "Path to a file to attach (repeatable)")
-	transactionalSendCmd.MarkFlagRequired("email")
-	transactionalSendCmd.MarkFlagRequired("id")
+	addTransactionalSendFlags(transactionalSendCmd)
 	transactionalCmd.AddCommand(transactionalSendCmd)
 
 	rootCmd.AddCommand(transactionalCmd)
