@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -10,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/cli/internal/cmdutil"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -17,12 +17,10 @@ import (
 func parseDataVars(vars []string, jsonFile string) (map[string]any, error) {
 	var m map[string]any
 	if jsonFile != "" {
-		data, err := os.ReadFile(jsonFile)
+		var err error
+		m, err = cmdutil.ParseJSONFile("json-vars", jsonFile)
 		if err != nil {
-			return nil, fmt.Errorf("--json-vars: %w", err)
-		}
-		if err := json.Unmarshal(data, &m); err != nil {
-			return nil, fmt.Errorf("--json-vars must be a valid JSON object: %w", err)
+			return nil, err
 		}
 	}
 	for _, pair := range vars {
