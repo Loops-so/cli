@@ -3,6 +3,8 @@
 
 version: 2
 
+project_name: loops_cli
+
 before:
   hooks:
     - go mod tidy
