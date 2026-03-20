@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/config"
@@ -44,7 +43,7 @@ var listsListCmd = &cobra.Command{
 			return nil
 		}
 
-		w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 2, ' ', 0)
+		w := newTableWriter(cmd.OutOrStdout())
 		fmt.Fprintln(w, "ID\tNAME\tDESCRIPTION\tPUBLIC")
 		for _, l := range lists {
 			fmt.Fprintf(w, "%s\t%s\t%s\t%v\n", l.ID, l.Name, l.Description, l.IsPublic)
