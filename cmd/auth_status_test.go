@@ -8,9 +8,9 @@ import (
 )
 
 func TestRunAuthStatus(t *testing.T) {
-	t.Run("returns config", func(t *testing.T) {
-		serveJSON(t, http.StatusOK, `{}`)
-		cfg, err := runAuthStatus()
+	t.Run("returns config and team name", func(t *testing.T) {
+		serveJSON(t, http.StatusOK, `{"teamName":"Acme"}`)
+		cfg, keyResp, err := runAuthStatus()
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -20,11 +20,22 @@ func TestRunAuthStatus(t *testing.T) {
 		if cfg.EndpointURL == "" {
 			t.Error("expected EndpointURL to be set")
 		}
+		if keyResp.TeamName != "Acme" {
+			t.Errorf("got team %q, want %q", keyResp.TeamName, "Acme")
+		}
 	})
 
 	t.Run("returns error when no key set", func(t *testing.T) {
 		keyring.MockInit()
-		_, err := runAuthStatus()
+		_, _, err := runAuthStatus()
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("returns error on api failure", func(t *testing.T) {
+		serveJSON(t, http.StatusUnauthorized, `{"error":"Invalid API key"}`)
+		_, _, err := runAuthStatus()
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
