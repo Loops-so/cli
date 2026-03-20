@@ -36,6 +36,8 @@ tasks:
 
   release:
     desc: release a new cli version
+    deps:
+      - release:check
     requires:
       vars:
         - tag
@@ -49,6 +51,8 @@ tasks:
 
   release:republish:
     desc: republish a cli version
+    deps:
+      - release:check
     requires:
       vars:
         - tag
@@ -66,3 +70,7 @@ tasks:
     desc: build with goreleaser
     cmds:
       - goreleaser release --snapshot --clean
+
+  release:check:
+    cmds:
+    - goreleaser check
