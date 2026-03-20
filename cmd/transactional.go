@@ -15,6 +15,30 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func parseDataVars(vars []string, jsonFile string) (map[string]any, error) {
+	var m map[string]any
+	if jsonFile != "" {
+		data, err := os.ReadFile(jsonFile)
+		if err != nil {
+			return nil, fmt.Errorf("--json-vars: %w", err)
+		}
+		if err := json.Unmarshal(data, &m); err != nil {
+			return nil, fmt.Errorf("--json-vars must be a valid JSON object: %w", err)
+		}
+	}
+	for _, pair := range vars {
+		idx := strings.IndexByte(pair, '=')
+		if idx < 0 {
+			return nil, fmt.Errorf("--var %q: expected KEY=value", pair)
+		}
+		if m == nil {
+			m = make(map[string]any)
+		}
+		m[pair[:idx]] = pair[idx+1:]
+	}
+	return m, nil
+}
+
 func attachmentFromPath(path string) (api.Attachment, error) {
 	info, err := os.Stat(path)
 	if err != nil {
@@ -111,7 +135,6 @@ func transactionalSendRunE(cmd *cobra.Command, args []string) error {
 
 	email, _ := cmd.Flags().GetString("email")
 	id, _ := cmd.Flags().GetString("id")
-	dataRaw, _ := cmd.Flags().GetString("data")
 	idempotencyKey, _ := cmd.Flags().GetString("idempotency-key")
 
 	req := api.SendTransactionalRequest{
@@ -125,10 +148,14 @@ func transactionalSendRunE(cmd *cobra.Command, args []string) error {
 		req.AddToAudience = &v
 	}
 
-	if dataRaw != "" {
-		if err := json.Unmarshal([]byte(dataRaw), &req.DataVariables); err != nil {
-			return fmt.Errorf("--data must be a valid JSON object: %w", err)
-		}
+	varPairs, _ := cmd.Flags().GetStringArray("var")
+	jsonFile, _ := cmd.Flags().GetString("json-vars")
+	dataVars, err := parseDataVars(varPairs, jsonFile)
+	if err != nil {
+		return err
+	}
+	if len(dataVars) > 0 {
+		req.DataVariables = dataVars
 	}
 
 	paths, _ := cmd.Flags().GetStringArray("attachment")
@@ -155,7 +182,8 @@ func addTransactionalSendFlags(cmd *cobra.Command) {
 	cmd.Flags().String("email", "", "Recipient email address")
 	cmd.Flags().String("id", "", "Transactional email ID")
 	cmd.Flags().BoolP("add-to-audience", "a", false, "Create a contact if one doesn't exist")
-	cmd.Flags().String("data", "", "Data variables as a JSON object")
+	cmd.Flags().StringArrayP("var", "v", nil, "Data variable as KEY=value (repeatable)")
+	cmd.Flags().StringP("json-vars", "j", "", "Path to a JSON file of data variables")
 	cmd.Flags().StringArrayP("attachment", "A", nil, "Path to a file to attach (repeatable)")
 	cmd.Flags().String("idempotency-key", "", "Idempotency key to prevent duplicate sends")
 	cmd.MarkFlagRequired("email")
