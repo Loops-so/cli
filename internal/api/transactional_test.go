@@ -17,7 +17,7 @@ const listTransactionalResponse = `{
 		"perPage": 20,
 		"totalPages": 1,
 		"nextCursor": "",
-		"nextPage": 0
+		"nextPage": ""
 	},
 	"data": [
 		{

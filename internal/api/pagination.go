@@ -6,7 +6,7 @@ type Pagination struct {
 	PerPage         int    `json:"perPage"`
 	TotalPages      int    `json:"totalPages"`
 	NextCursor      string `json:"nextCursor"`
-	NextPage        int    `json:"nextPage"`
+	NextPage        string `json:"nextPage"`
 }
 
 type PaginationParams struct {
