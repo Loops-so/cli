@@ -33,3 +33,36 @@ tasks:
     desc: run govulncheck
     cmds:
       - go tool govulncheck {{.CLI_ARGS}} ./...
+
+  release:
+    desc: release a new cli version
+    requires:
+      vars:
+        - tag
+    cmds:
+      - git pull --rebase
+      - git tag {{.tag}}
+      - git push origin {{.tag}}
+    # preconditions:
+    #   - sh: '[ "$(git branch --show-current)" = "main" ]'
+    #     msg: make sure you're on main
+
+  release:republish:
+    desc: republish a cli version
+    requires:
+      vars:
+        - tag
+    cmds:
+      - git pull --rebase
+      - gh release delete {{.tag}} --yes --cleanup-tag
+      - task: release
+        vars:
+          tag: '{{.tag}}'
+    # preconditions:
+    #   - sh: '[ "$(git branch --show-current)" = "main" ]'
+    #     msg: make sure you're on main
+
+  release:local:
+    desc: build with goreleaser
+    cmds:
+      - goreleaser release --snapshot --clean
