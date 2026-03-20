@@ -183,7 +183,7 @@ func addTransactionalSendFlags(cmd *cobra.Command) {
 	cmd.Flags().String("id", "", "Transactional email ID")
 	cmd.Flags().BoolP("add-to-audience", "a", false, "Create a contact if one doesn't exist")
 	cmd.Flags().StringArrayP("var", "v", nil, "Data variable as KEY=value (repeatable)")
-	cmd.Flags().StringP("json-vars", "J", "", "Path to a JSON file of data variables")
+	cmd.Flags().StringP("json-vars", "j", "", "Path to a JSON file of data variables")
 	cmd.Flags().StringArrayP("attachment", "A", nil, "Path to a file to attach (repeatable)")
 	cmd.Flags().String("idempotency-key", "", "Idempotency key to prevent duplicate sends")
 	cmd.MarkFlagRequired("email")
