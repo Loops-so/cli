@@ -45,9 +45,9 @@ tasks:
       - git pull --rebase
       - git tag {{.tag}}
       - git push origin {{.tag}}
-    # preconditions:
-    #   - sh: '[ "$(git branch --show-current)" = "main" ]'
-    #     msg: make sure you're on main
+    preconditions:
+      - sh: '[ "$(git branch --show-current)" = "main" ]'
+        msg: make sure you're on main
 
   release:republish:
     desc: republish a cli version
@@ -62,9 +62,9 @@ tasks:
       - task: release
         vars:
           tag: '{{.tag}}'
-    # preconditions:
-    #   - sh: '[ "$(git branch --show-current)" = "main" ]'
-    #     msg: make sure you're on main
+    preconditions:
+      - sh: '[ "$(git branch --show-current)" = "main" ]'
+        msg: make sure you're on main
 
   release:local:
     desc: build with goreleaser
