@@ -7,7 +7,7 @@ on:
 
 jobs:
   release:
-    runs-on: ubuntu-4cpu-16gb
+    runs-on: ubuntu-8cpu-32gb
     permissions:
       contents: write
     steps:
@@ -19,6 +19,6 @@ jobs:
           go-version-file: go.mod
       - uses: goreleaser/goreleaser-action@v7
         with:
-          args: release --clean --parallelism=4
+          args: release --clean --parallelism=8
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
