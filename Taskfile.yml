@@ -4,6 +4,7 @@ version: "3"
 
 tasks:
   default:
+    desc: run the loops cli in dev
     dotenv:
       - .env
       - .env.{{.ENV}}
@@ -12,19 +13,23 @@ tasks:
     silent: true
 
   deps:
+    desc: install/update deps
     cmds:
       - go mod tidy
 
   build:
+    desc: build the cli
     deps:
       - deps
     cmds:
       - go build -o dist/loops
 
   test:
+    desc: run tests
     cmds:
       - go test ./... -cover
 
   vuln:
+    desc: run govulncheck
     cmds:
       - go tool govulncheck {{.CLI_ARGS}} ./...
