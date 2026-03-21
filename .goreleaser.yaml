@@ -20,7 +20,7 @@ builds:
     ldflags:
       - -s -w
       - -X github.com/loops-so/cli/cmd.version={{.Version}}
-      - -X github.com/loops-so/cli/cmd.commit={{.Commit}}
+      - -X github.com/loops-so/cli/cmd.commit={{.ShortCommit}}
       - -X github.com/loops-so/cli/cmd.date={{.Date}}
 
 archives:
