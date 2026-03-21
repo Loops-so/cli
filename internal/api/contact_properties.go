@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -40,4 +41,28 @@ func (c *Client) ListContactProperties(customOnly bool) ([]ContactProperty, erro
 	}
 
 	return result, nil
+}
+
+func (c *Client) CreateContactProperty(name, propType string) error {
+	b, err := json.Marshal(map[string]string{"name": name, "type": propType})
+	if err != nil {
+		return fmt.Errorf("failed to encode request: %w", err)
+	}
+
+	req, err := c.newRequest(http.MethodPost, "/contacts/properties", bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errorFromResponse(resp)
+	}
+
+	return nil
 }

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -103,6 +104,76 @@ func TestListContactProperties(t *testing.T) {
 			}
 			if len(props) != tt.wantCount {
 				t.Errorf("len(props) = %d, want %d", len(props), tt.wantCount)
+			}
+		})
+	}
+}
+
+func TestCreateContactProperty(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		body       string
+		wantAPIErr *APIError
+		wantBody   map[string]string
+	}{
+		{
+			name:       "success",
+			statusCode: http.StatusOK,
+			body:       `{"success":true}`,
+			wantBody:   map[string]string{"name": "age", "type": "number"},
+		},
+		{
+			name:       "failure",
+			statusCode: http.StatusBadRequest,
+			body:       `{"message":"Property already exists"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "Property already exists"},
+		},
+		{
+			name:       "unauthorized",
+			statusCode: http.StatusUnauthorized,
+			body:       `{"error":"Invalid API key"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusUnauthorized, Message: "Invalid API key"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotBody map[string]string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				json.NewDecoder(r.Body).Decode(&gotBody)
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			client := NewClient(server.URL, "test-key")
+			err := client.CreateContactProperty("age", "number")
+
+			if tt.wantBody != nil {
+				for k, v := range tt.wantBody {
+					if gotBody[k] != v {
+						t.Errorf("body[%q] = %q, want %q", k, gotBody[k], v)
+					}
+				}
+			}
+
+			if tt.wantAPIErr != nil {
+				var apiErr *APIError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("expected *APIError, got %T: %v", err, err)
+				}
+				if apiErr.StatusCode != tt.wantAPIErr.StatusCode {
+					t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, tt.wantAPIErr.StatusCode)
+				}
+				if tt.wantAPIErr.Message != "" && apiErr.Message != tt.wantAPIErr.Message {
+					t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantAPIErr.Message)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
 			}
 		})
 	}
