@@ -12,6 +12,10 @@ func runContactPropertiesList(cfg *config.Config, customOnly bool) ([]api.Contac
 	return api.NewClient(cfg.EndpointURL, cfg.APIKey).ListContactProperties(customOnly)
 }
 
+func runContactPropertiesCreate(cfg *config.Config, name, propType string) error {
+	return api.NewClient(cfg.EndpointURL, cfg.APIKey).CreateContactProperty(name, propType)
+}
+
 var contactPropertiesCmd = &cobra.Command{
 	Use:   "contact-properties",
 	Short: "Manage contact properties",
@@ -56,8 +60,39 @@ var contactPropertiesListCmd = &cobra.Command{
 	},
 }
 
+var contactPropertiesCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a contact property",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		name, _ := cmd.Flags().GetString("name")
+		propType, _ := cmd.Flags().GetString("type")
+
+		cfg, err := config.Load()
+		if err != nil {
+			return err
+		}
+
+		if err := runContactPropertiesCreate(cfg, name, propType); err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), Result{Success: true})
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), "Created.")
+		return nil
+	},
+}
+
 func init() {
 	contactPropertiesListCmd.Flags().Bool("custom", false, "Only list custom properties")
 	contactPropertiesCmd.AddCommand(contactPropertiesListCmd)
+
+	contactPropertiesCreateCmd.Flags().String("name", "", "Property name (camelCase, e.g. planName)")
+	contactPropertiesCreateCmd.Flags().String("type", "", "Property type")
+	contactPropertiesCreateCmd.MarkFlagRequired("name")
+	contactPropertiesCreateCmd.MarkFlagRequired("type")
+	contactPropertiesCmd.AddCommand(contactPropertiesCreateCmd)
+
 	rootCmd.AddCommand(contactPropertiesCmd)
 }
