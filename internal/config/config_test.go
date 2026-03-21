@@ -220,6 +220,51 @@ func TestSave(t *testing.T) {
 	})
 }
 
+func TestSetActiveTeam(t *testing.T) {
+	t.Run("sets active team", func(t *testing.T) {
+		setup(t)
+		Save("key1", "acme")
+		Save("key2", "work") // work is now active
+
+		if err := SetActiveTeam("acme"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		pc, err := LoadPersistentConfig()
+		if err != nil {
+			t.Fatalf("LoadPersistentConfig: %v", err)
+		}
+		if pc.ActiveTeam != "acme" {
+			t.Errorf("got %q, want %q", pc.ActiveTeam, "acme")
+		}
+	})
+
+	t.Run("errors when name not in teams list", func(t *testing.T) {
+		setup(t)
+
+		if err := SetActiveTeam("nonexistent"); err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("clears active team when name is empty", func(t *testing.T) {
+		setup(t)
+		Save("key1", "acme")
+
+		if err := SetActiveTeam(""); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		pc, err := LoadPersistentConfig()
+		if err != nil {
+			t.Fatalf("LoadPersistentConfig: %v", err)
+		}
+		if pc.ActiveTeam != "" {
+			t.Errorf("got %q, want empty", pc.ActiveTeam)
+		}
+	})
+}
+
 func TestListKeys(t *testing.T) {
 	t.Run("returns empty slice when no teams configured", func(t *testing.T) {
 		setup(t)

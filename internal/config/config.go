@@ -134,6 +134,18 @@ func Save(apiKey, name string) error {
 	return SavePersistentConfig(pc)
 }
 
+func SetActiveTeam(name string) error {
+	pc, err := LoadPersistentConfig()
+	if err != nil {
+		return err
+	}
+	if name != "" && !slices.Contains(pc.Teams, name) {
+		return fmt.Errorf("no key named %q — run `loops auth list` to see available keys", name)
+	}
+	pc.ActiveTeam = name
+	return SavePersistentConfig(pc)
+}
+
 type KeyEntry struct {
 	Name   string
 	APIKey string

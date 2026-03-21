@@ -9,12 +9,15 @@ import (
 func TestRunAuthList(t *testing.T) {
 	t.Run("returns empty list when no keys stored", func(t *testing.T) {
 		mockKeyring(t)
-		entries, err := runAuthList()
+		entries, activeTeam, err := runAuthList()
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if len(entries) != 0 {
 			t.Errorf("got %d entries, want 0", len(entries))
+		}
+		if activeTeam != "" {
+			t.Errorf("got activeTeam %q, want empty", activeTeam)
 		}
 	})
 
@@ -23,7 +26,7 @@ func TestRunAuthList(t *testing.T) {
 		config.Save("key-abc1234", "acme")
 		config.Save("key-xyz5678", "work")
 
-		entries, err := runAuthList()
+		entries, _, err := runAuthList()
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -35,6 +38,21 @@ func TestRunAuthList(t *testing.T) {
 		}
 		if entries[1].Name != "work" || entries[1].APIKey != "key-xyz5678" {
 			t.Errorf("entry 1: got {%q, %q}, want {work, key-xyz5678}", entries[1].Name, entries[1].APIKey)
+		}
+	})
+
+	t.Run("returns active team", func(t *testing.T) {
+		mockKeyring(t)
+		config.Save("key-abc1234", "acme")
+		config.Save("key-xyz5678", "work")
+		config.SetActiveTeam("acme")
+
+		_, activeTeam, err := runAuthList()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if activeTeam != "acme" {
+			t.Errorf("got activeTeam %q, want %q", activeTeam, "acme")
 		}
 	})
 }
