@@ -21,11 +21,13 @@ func cfg(t *testing.T) *config.Config {
 func mockKeyring(t *testing.T) {
 	t.Helper()
 	keyring.MockInit()
+	t.Setenv("LOOPS_CONFIG_DIR", t.TempDir())
 }
 
 func serveJSON(t *testing.T, status int, body string) {
 	t.Helper()
 	keyring.MockInit()
+	t.Setenv("LOOPS_CONFIG_DIR", t.TempDir())
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(status)
 		w.Write([]byte(body))

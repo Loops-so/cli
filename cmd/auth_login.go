@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -11,10 +12,16 @@ import (
 	"golang.org/x/term"
 )
 
+var loginName string
+
 var loginCmd = &cobra.Command{
 	Use:   "login",
 	Short: "Authenticate with your Loops API key",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if loginName == "" {
+			return errors.New("use --name to give this key a name (e.g. loops auth login --name loops-prod)")
+		}
+
 		fmt.Fprint(os.Stderr, "Enter your API key: ")
 		raw, err := term.ReadPassword(int(os.Stdin.Fd()))
 		fmt.Fprintln(os.Stderr)
@@ -27,7 +34,7 @@ var loginCmd = &cobra.Command{
 			return fmt.Errorf("API key cannot be empty")
 		}
 
-		result, err := runAuthLogin(apiKey)
+		result, err := runAuthLogin(apiKey, loginName)
 		if err != nil {
 			return err
 		}
@@ -35,22 +42,26 @@ var loginCmd = &cobra.Command{
 		if isJSONOutput() {
 			return printJSON(cmd.OutOrStdout(), Result{Success: true, Message: fmt.Sprintf("Authenticated as team: %s", result.TeamName)})
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "API key saved. Authenticated as team: %s\n", result.TeamName)
+		fmt.Fprintf(cmd.OutOrStdout(), "API key saved as %q. Authenticated as team: %s\n", loginName, result.TeamName)
 		return nil
 	},
 }
 
-func runAuthLogin(apiKey string) (*api.APIKeyResponse, error) {
+func runAuthLogin(apiKey, name string) (*api.APIKeyResponse, error) {
+	if name == "" {
+		return nil, errors.New("use --name to give this key a name")
+	}
 	result, err := api.NewClient(config.EndpointURL(), apiKey).GetAPIKey()
 	if err != nil {
 		return nil, fmt.Errorf("API key verification failed: %w", err)
 	}
-	if err := config.Save(apiKey); err != nil {
+	if err := config.Save(apiKey, name); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
 func init() {
+	loginCmd.Flags().StringVarP(&loginName, "name", "n", "", "Name for this API key (e.g. loops-prod)")
 	authCmd.AddCommand(loginCmd)
 }
