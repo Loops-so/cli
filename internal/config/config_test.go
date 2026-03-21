@@ -194,6 +194,57 @@ func TestSave(t *testing.T) {
 	})
 }
 
+func TestListKeys(t *testing.T) {
+	t.Run("returns empty slice when no teams configured", func(t *testing.T) {
+		setup(t)
+
+		entries, err := ListKeys()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(entries) != 0 {
+			t.Errorf("got %d entries, want 0", len(entries))
+		}
+	})
+
+	t.Run("returns keys in config order", func(t *testing.T) {
+		setup(t)
+		Save("key-a", "acme")
+		Save("key-b", "work")
+
+		entries, err := ListKeys()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(entries) != 2 {
+			t.Fatalf("got %d entries, want 2", len(entries))
+		}
+		if entries[0].Name != "acme" || entries[0].APIKey != "key-a" {
+			t.Errorf("entry 0: got {%q, %q}, want {acme, key-a}", entries[0].Name, entries[0].APIKey)
+		}
+		if entries[1].Name != "work" || entries[1].APIKey != "key-b" {
+			t.Errorf("entry 1: got {%q, %q}, want {work, key-b}", entries[1].Name, entries[1].APIKey)
+		}
+	})
+
+	t.Run("returns empty api key when keyring entry missing", func(t *testing.T) {
+		setup(t)
+		Save("key-a", "acme")
+		keyring.Delete(keyringService, "key:acme")
+
+		entries, err := ListKeys()
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if len(entries) != 1 {
+			t.Fatalf("got %d entries, want 1", len(entries))
+		}
+		if entries[0].APIKey != "" {
+			t.Errorf("got %q, want empty string", entries[0].APIKey)
+		}
+	})
+}
+
 func TestDelete(t *testing.T) {
 	t.Run("errors when name is empty", func(t *testing.T) {
 		setup(t)

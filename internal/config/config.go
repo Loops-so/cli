@@ -130,6 +130,27 @@ func Save(apiKey, name string) error {
 	return SavePersistentConfig(pc)
 }
 
+type KeyEntry struct {
+	Name   string
+	APIKey string
+}
+
+func ListKeys() ([]KeyEntry, error) {
+	pc, err := LoadPersistentConfig()
+	if err != nil {
+		return nil, err
+	}
+	entries := make([]KeyEntry, 0, len(pc.Teams))
+	for _, name := range pc.Teams {
+		key, err := keyring.Get(keyringService, "key:"+name)
+		if err != nil && !errors.Is(err, keyring.ErrNotFound) {
+			return nil, fmt.Errorf("could not read key %q: %w", name, err)
+		}
+		entries = append(entries, KeyEntry{Name: name, APIKey: key})
+	}
+	return entries, nil
+}
+
 func Delete(name string) error {
 	if name == "" {
 		return errors.New("a name is required — use --name to specify which key to remove")
