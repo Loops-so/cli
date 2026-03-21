@@ -17,6 +17,11 @@ builds:
       - linux
       - windows
       - darwin
+    ldflags:
+      - -s -w
+      - -X github.com/loops-so/cli/cmd.version={{.Version}}
+      - -X github.com/loops-so/cli/cmd.commit={{.Commit}}
+      - -X github.com/loops-so/cli/cmd.date={{.Date}}
 
 archives:
   - formats: [tar.gz]
