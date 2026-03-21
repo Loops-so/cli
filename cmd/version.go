@@ -10,7 +10,6 @@ import (
 var (
 	version = "dev"
 	commit  = "none"
-	date    = "unknown"
 )
 
 var versionCmd = &cobra.Command{
@@ -26,10 +25,9 @@ func runVersion(w io.Writer) error {
 		return printJSON(w, struct {
 			Version string `json:"version"`
 			Commit  string `json:"commit"`
-			Date    string `json:"date"`
-		}{version, commit, date})
+		}{version, commit})
 	}
-	fmt.Fprintf(w, "loops version %s (commit: %s, built: %s)\n", version, commit, date)
+	fmt.Fprintf(w, "loops %s (commit: %s)\n", version, commit)
 	return nil
 }
 

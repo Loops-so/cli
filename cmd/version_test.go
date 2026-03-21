@@ -14,7 +14,7 @@ func TestRunVersion_Text(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := buf.String()
-	if !strings.HasPrefix(got, "loops version ") {
+	if !strings.HasPrefix(got, "loops ") {
 		t.Errorf("unexpected output: %q", got)
 	}
 }
@@ -31,7 +31,6 @@ func TestRunVersion_JSON(t *testing.T) {
 	var got struct {
 		Version string `json:"version"`
 		Commit  string `json:"commit"`
-		Date    string `json:"date"`
 	}
 	if err := json.Unmarshal(buf.Bytes(), &got); err != nil {
 		t.Fatalf("invalid JSON: %v", err)
