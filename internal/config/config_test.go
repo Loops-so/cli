@@ -24,6 +24,22 @@ func TestLoad(t *testing.T) {
 		}
 	})
 
+	t.Run("errors when activeTeam is set but key not in keyring", func(t *testing.T) {
+		setup(t)
+		t.Setenv("LOOPS_API_KEY", "")
+		t.Setenv("LOOPS_ENDPOINT_URL", "")
+
+		if err := Save("some-key", "acme"); err != nil {
+			t.Fatalf("Save: %v", err)
+		}
+		keyring.Delete(keyringService, "key:acme")
+
+		_, err := Load()
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
 	t.Run("reads api key from active team", func(t *testing.T) {
 		setup(t)
 		t.Setenv("LOOPS_API_KEY", "")
@@ -128,6 +144,23 @@ func TestSave(t *testing.T) {
 		}
 		if len(pc.Teams) != 1 || pc.Teams[0] != "acme" {
 			t.Errorf("teams: got %v, want [acme]", pc.Teams)
+		}
+	})
+
+	t.Run("overwrites existing key value in keyring", func(t *testing.T) {
+		setup(t)
+		Save("old-key", "acme")
+
+		if err := Save("new-key", "acme"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+
+		got, err := keyring.Get(keyringService, "key:acme")
+		if err != nil {
+			t.Fatalf("could not read keyring: %v", err)
+		}
+		if got != "new-key" {
+			t.Errorf("got %q, want %q", got, "new-key")
 		}
 	})
 
