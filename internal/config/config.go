@@ -4,19 +4,75 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
+	"slices"
 
 	"github.com/zalando/go-keyring"
+	"gopkg.in/yaml.v2"
 )
 
 const (
 	DefaultEndpointURL = "https://app.loops.so/api/v1"
 	keyringService     = "loops"
-	keyringUser        = "api-key"
 )
 
 type Config struct {
 	APIKey      string
 	EndpointURL string
+}
+
+type PersistentConfig struct {
+	ActiveTeam string   `yaml:"activeTeam"`
+	Teams      []string `yaml:"teams"`
+}
+
+func configFilePath() (string, error) {
+	if dir := os.Getenv("LOOPS_CONFIG_DIR"); dir != "" {
+		return filepath.Join(dir, "config.yml"), nil
+	}
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		return "", fmt.Errorf("could not determine config directory: %w", err)
+	}
+	return filepath.Join(dir, "loops", "config.yml"), nil
+}
+
+func LoadPersistentConfig() (*PersistentConfig, error) {
+	path, err := configFilePath()
+	if err != nil {
+		return nil, err
+	}
+	data, err := os.ReadFile(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return &PersistentConfig{}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("could not read config file: %w", err)
+	}
+	var pc PersistentConfig
+	if err := yaml.Unmarshal(data, &pc); err != nil {
+		return nil, fmt.Errorf("could not parse config file: %w", err)
+	}
+	return &pc, nil
+}
+
+func SavePersistentConfig(pc *PersistentConfig) error {
+	path, err := configFilePath()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return fmt.Errorf("could not create config directory: %w", err)
+	}
+	data, err := yaml.Marshal(pc)
+	if err != nil {
+		return fmt.Errorf("could not marshal config: %w", err)
+	}
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, data, 0o600); err != nil {
+		return fmt.Errorf("could not write config file: %w", err)
+	}
+	return os.Rename(tmp, path)
 }
 
 func EndpointURL() string {
@@ -31,31 +87,63 @@ func Load() (*Config, error) {
 		EndpointURL: EndpointURL(),
 	}
 
-	apiKey, err := keyring.Get(keyringService, keyringUser)
-	if err != nil && !errors.Is(err, keyring.ErrNotFound) {
-		return nil, fmt.Errorf("could not read keyring: %w", err)
-	}
-	cfg.APIKey = apiKey
-
 	if v := os.Getenv("LOOPS_API_KEY"); v != "" {
 		cfg.APIKey = v
+		return cfg, nil
+	}
+
+	pc, err := LoadPersistentConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	if pc.ActiveTeam != "" {
+		key, err := keyring.Get(keyringService, "key:"+pc.ActiveTeam)
+		if err != nil && !errors.Is(err, keyring.ErrNotFound) {
+			return nil, fmt.Errorf("could not read keyring: %w", err)
+		}
+		cfg.APIKey = key
 	}
 
 	if cfg.APIKey == "" {
-		return nil, errors.New("LOOPS_API_KEY is not set and no stored API credentials were found")
+		return nil, errors.New("no active team set — run `loops auth login --name <name>` to authenticate")
 	}
 
 	return cfg, nil
 }
 
-func Save(apiKey string) error {
-	return keyring.Set(keyringService, keyringUser, apiKey)
+func Save(apiKey, name string) error {
+	if name == "" {
+		return errors.New("a name is required — use --name to give this key a name")
+	}
+	if err := keyring.Set(keyringService, "key:"+name, apiKey); err != nil {
+		return fmt.Errorf("could not save to keyring: %w", err)
+	}
+	pc, err := LoadPersistentConfig()
+	if err != nil {
+		return err
+	}
+	if !slices.Contains(pc.Teams, name) {
+		pc.Teams = append(pc.Teams, name)
+	}
+	pc.ActiveTeam = name
+	return SavePersistentConfig(pc)
 }
 
-func Delete() error {
-	err := keyring.Delete(keyringService, keyringUser)
-	if errors.Is(err, keyring.ErrNotFound) {
-		return nil
+func Delete(name string) error {
+	if name == "" {
+		return errors.New("a name is required — use --name to specify which key to remove")
 	}
-	return err
+	if err := keyring.Delete(keyringService, "key:"+name); err != nil && !errors.Is(err, keyring.ErrNotFound) {
+		return fmt.Errorf("could not delete key %q from keyring: %w", name, err)
+	}
+	pc, err := LoadPersistentConfig()
+	if err != nil {
+		return err
+	}
+	pc.Teams = slices.DeleteFunc(pc.Teams, func(t string) bool { return t == name })
+	if pc.ActiveTeam == name {
+		pc.ActiveTeam = ""
+	}
+	return SavePersistentConfig(pc)
 }
