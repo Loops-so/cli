@@ -15,7 +15,7 @@ func TestRunAuthLogout(t *testing.T) {
 	})
 
 	t.Run("returns error when name is empty", func(t *testing.T) {
-		serveJSON(t, http.StatusOK, `{}`)
+		mockKeyring(t)
 		if err := runAuthLogout(""); err == nil {
 			t.Fatal("expected error, got nil")
 		}
