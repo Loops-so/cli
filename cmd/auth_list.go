@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"text/tabwriter"
 
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
@@ -35,7 +34,7 @@ var authListCmd = &cobra.Command{
 			return nil
 		}
 
-		w := tabwriter.NewWriter(cmd.OutOrStdout(), 0, 0, 3, ' ', 0)
+		w := newTableWriter(cmd.OutOrStdout())
 		fmt.Fprintln(w, "NAME\tAPI KEY")
 		for _, e := range entries {
 			name := e.Name
