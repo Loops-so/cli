@@ -43,7 +43,7 @@ var statusCmd = &cobra.Command{
 }
 
 func runAuthStatus() (*config.Config, *api.APIKeyResponse, *config.PersistentConfig, error) {
-	cfg, err := config.Load()
+	cfg, err := loadConfig()
 	if err != nil {
 		return nil, nil, nil, err
 	}

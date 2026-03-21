@@ -11,7 +11,7 @@ import (
 
 func cfg(t *testing.T) *config.Config {
 	t.Helper()
-	c, err := config.Load()
+	c, err := config.Load("")
 	if err != nil {
 		t.Fatalf("config.Load: %v", err)
 	}

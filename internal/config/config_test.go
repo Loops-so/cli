@@ -18,7 +18,33 @@ func TestLoad(t *testing.T) {
 		t.Setenv("LOOPS_API_KEY", "")
 		t.Setenv("LOOPS_ENDPOINT_URL", "")
 
-		_, err := Load()
+		_, err := Load("")
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("uses team override when provided", func(t *testing.T) {
+		setup(t)
+		t.Setenv("LOOPS_API_KEY", "")
+		t.Setenv("LOOPS_ENDPOINT_URL", "")
+		Save("other-key", "other")
+		keyring.Set(keyringService, "key:acme", "acme-key")
+
+		cfg, err := Load("acme")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.APIKey != "acme-key" {
+			t.Errorf("got %q, want %q", cfg.APIKey, "acme-key")
+		}
+	})
+
+	t.Run("errors when team override key not in keyring", func(t *testing.T) {
+		setup(t)
+		t.Setenv("LOOPS_API_KEY", "")
+
+		_, err := Load("nonexistent")
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -34,7 +60,7 @@ func TestLoad(t *testing.T) {
 		}
 		keyring.Delete(keyringService, "key:acme")
 
-		_, err := Load()
+		_, err := Load("")
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
@@ -49,7 +75,7 @@ func TestLoad(t *testing.T) {
 			t.Fatalf("Save: %v", err)
 		}
 
-		cfg, err := Load()
+		cfg, err := Load("")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -66,7 +92,7 @@ func TestLoad(t *testing.T) {
 		t.Setenv("LOOPS_API_KEY", "env-key")
 		t.Setenv("LOOPS_ENDPOINT_URL", "")
 
-		cfg, err := Load()
+		cfg, err := Load("")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -80,7 +106,7 @@ func TestLoad(t *testing.T) {
 		t.Setenv("LOOPS_API_KEY", "some-key")
 		t.Setenv("LOOPS_ENDPOINT_URL", "")
 
-		cfg, err := Load()
+		cfg, err := Load("")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -94,7 +120,7 @@ func TestLoad(t *testing.T) {
 		t.Setenv("LOOPS_API_KEY", "some-key")
 		t.Setenv("LOOPS_ENDPOINT_URL", "https://custom.example.com/api")
 
-		cfg, err := Load()
+		cfg, err := Load("")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}

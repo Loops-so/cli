@@ -21,7 +21,7 @@ var listsListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List mailing lists",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load()
+		cfg, err := loadConfig()
 		if err != nil {
 			return err
 		}

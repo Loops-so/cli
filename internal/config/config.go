@@ -82,7 +82,7 @@ func EndpointURL() string {
 	return DefaultEndpointURL
 }
 
-func Load() (*Config, error) {
+func Load(teamOverride string) (*Config, error) {
 	cfg := &Config{
 		EndpointURL: EndpointURL(),
 	}
@@ -92,13 +92,17 @@ func Load() (*Config, error) {
 		return cfg, nil
 	}
 
-	pc, err := LoadPersistentConfig()
-	if err != nil {
-		return nil, err
+	team := teamOverride
+	if team == "" {
+		pc, err := LoadPersistentConfig()
+		if err != nil {
+			return nil, err
+		}
+		team = pc.ActiveTeam
 	}
 
-	if pc.ActiveTeam != "" {
-		key, err := keyring.Get(keyringService, "key:"+pc.ActiveTeam)
+	if team != "" {
+		key, err := keyring.Get(keyringService, "key:"+team)
 		if err != nil && !errors.Is(err, keyring.ErrNotFound) {
 			return nil, fmt.Errorf("could not read keyring: %w", err)
 		}
