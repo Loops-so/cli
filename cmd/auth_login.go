@@ -19,7 +19,7 @@ var loginCmd = &cobra.Command{
 	Short: "Authenticate with your Loops API key",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if loginName == "" {
-			return errors.New("use --name to give this key a name (e.g. loops auth login --name loops-prod)")
+			return errors.New("use --name to give this key a name (e.g. loops auth login --name my-team)")
 		}
 
 		fmt.Fprint(os.Stderr, "Enter your API key: ")
@@ -62,6 +62,6 @@ func runAuthLogin(apiKey, name string) (*api.APIKeyResponse, error) {
 }
 
 func init() {
-	loginCmd.Flags().StringVarP(&loginName, "name", "n", "", "Name for this API key (e.g. loops-prod)")
+	loginCmd.Flags().StringVarP(&loginName, "name", "n", "", "Name for this API key (e.g. my-team)")
 	authCmd.AddCommand(loginCmd)
 }
