@@ -1,12 +1,164 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 )
+
+func TestCreateContact(t *testing.T) {
+	boolPtr := func(b bool) *bool { return &b }
+
+	tests := []struct {
+		name       string
+		req        CreateContactRequest
+		statusCode int
+		body       string
+		wantAPIErr *APIError
+		wantErrMsg string
+		wantID     string
+		wantBody   map[string]any
+	}{
+		{
+			name:       "success",
+			req:        CreateContactRequest{Email: "bob@example.com"},
+			statusCode: http.StatusOK,
+			body:       `{"success":true,"id":"cnt_abc123"}`,
+			wantID:     "cnt_abc123",
+			wantBody:   map[string]any{"email": "bob@example.com"},
+		},
+		{
+			name: "sends all standard fields",
+			req: CreateContactRequest{
+				Email:      "bob@example.com",
+				FirstName:  "Bob",
+				LastName:   "Smith",
+				Source:     "api",
+				Subscribed: boolPtr(true),
+				UserGroup:  "vip",
+				UserID:     "user_123",
+			},
+			statusCode: http.StatusOK,
+			body:       `{"success":true,"id":"cnt_abc123"}`,
+			wantID:     "cnt_abc123",
+			wantBody: map[string]any{
+				"email":     "bob@example.com",
+				"firstName": "Bob",
+				"lastName":  "Smith",
+				"source":    "api",
+				"subscribed": true,
+				"userGroup": "vip",
+				"userId":    "user_123",
+			},
+		},
+		{
+			name: "merges contact properties at top level",
+			req: CreateContactRequest{
+				Email:             "bob@example.com",
+				ContactProperties: map[string]any{"plan": "pro", "score": float64(42)},
+			},
+			statusCode: http.StatusOK,
+			body:       `{"success":true,"id":"cnt_abc123"}`,
+			wantID:     "cnt_abc123",
+			wantBody:   map[string]any{"email": "bob@example.com", "plan": "pro", "score": float64(42)},
+		},
+		{
+			name: "sends mailing lists",
+			req: CreateContactRequest{
+				Email:        "bob@example.com",
+				MailingLists: map[string]bool{"list_abc": true, "list_def": false},
+			},
+			statusCode: http.StatusOK,
+			body:       `{"success":true,"id":"cnt_abc123"}`,
+			wantID:     "cnt_abc123",
+		},
+		{
+			name:       "bad request",
+			req:        CreateContactRequest{Email: "notanemail"},
+			statusCode: http.StatusBadRequest,
+			body:       `{"success":false,"message":"Invalid email address"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "Invalid email address"},
+		},
+		{
+			name:       "conflict",
+			req:        CreateContactRequest{Email: "existing@example.com"},
+			statusCode: http.StatusConflict,
+			body:       `{"success":false,"message":"Contact already exists"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusConflict, Message: "Contact already exists"},
+		},
+		{
+			name:       "unauthorized",
+			req:        CreateContactRequest{Email: "bob@example.com"},
+			statusCode: http.StatusUnauthorized,
+			body:       `{"error":"Invalid API key"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusUnauthorized, Message: "Invalid API key"},
+		},
+		{
+			name:       "invalid json response",
+			req:        CreateContactRequest{Email: "bob@example.com"},
+			statusCode: http.StatusOK,
+			body:       `not json`,
+			wantErrMsg: "failed to decode response",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotBody map[string]any
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				json.NewDecoder(r.Body).Decode(&gotBody)
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			client := NewClient(server.URL, "test-key")
+			id, err := client.CreateContact(tt.req)
+
+			if tt.wantBody != nil {
+				for k, v := range tt.wantBody {
+					if gotBody[k] != v {
+						t.Errorf("body[%q] = %v, want %v", k, gotBody[k], v)
+					}
+				}
+			}
+
+			if tt.wantAPIErr != nil {
+				var apiErr *APIError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("expected *APIError, got %T: %v", err, err)
+				}
+				if apiErr.StatusCode != tt.wantAPIErr.StatusCode {
+					t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, tt.wantAPIErr.StatusCode)
+				}
+				if tt.wantAPIErr.Message != "" && apiErr.Message != tt.wantAPIErr.Message {
+					t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantAPIErr.Message)
+				}
+				return
+			}
+
+			if tt.wantErrMsg != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tt.wantErrMsg)
+				}
+				if !strings.Contains(err.Error(), tt.wantErrMsg) {
+					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.wantErrMsg)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if id != tt.wantID {
+				t.Errorf("id = %q, want %q", id, tt.wantID)
+			}
+		})
+	}
+}
 
 func TestFindContacts(t *testing.T) {
 	tests := []struct {

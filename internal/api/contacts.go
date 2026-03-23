@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -17,6 +18,77 @@ type Contact struct {
 	UserID       *string         `json:"userId"`
 	MailingLists map[string]bool `json:"mailingLists"`
 	OptInStatus  *string         `json:"optInStatus"`
+}
+
+type CreateContactRequest struct {
+	Email             string
+	FirstName         string
+	LastName          string
+	Source            string
+	Subscribed        *bool
+	UserGroup         string
+	UserID            string
+	MailingLists      map[string]bool
+	ContactProperties map[string]any
+}
+
+func (c *Client) CreateContact(req CreateContactRequest) (string, error) {
+	body := make(map[string]any)
+	for k, v := range req.ContactProperties {
+		body[k] = v
+	}
+	body["email"] = req.Email
+	if req.FirstName != "" {
+		body["firstName"] = req.FirstName
+	}
+	if req.LastName != "" {
+		body["lastName"] = req.LastName
+	}
+	if req.Source != "" {
+		body["source"] = req.Source
+	}
+	if req.Subscribed != nil {
+		body["subscribed"] = *req.Subscribed
+	}
+	if req.UserGroup != "" {
+		body["userGroup"] = req.UserGroup
+	}
+	if req.UserID != "" {
+		body["userId"] = req.UserID
+	}
+	if len(req.MailingLists) > 0 {
+		body["mailingLists"] = req.MailingLists
+	}
+
+	b, err := json.Marshal(body)
+	if err != nil {
+		return "", fmt.Errorf("failed to encode request: %w", err)
+	}
+
+	httpReq, err := c.newRequest(http.MethodPost, "/contacts/create", bytes.NewReader(b))
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := c.do(httpReq)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", errorFromResponse(resp)
+	}
+
+	var result struct {
+		Success bool   `json:"success"`
+		ID      string `json:"id"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return result.ID, nil
 }
 
 type FindContactParams struct {
