@@ -2,6 +2,16 @@ package cmd
 
 import "testing"
 
+func TestDeref(t *testing.T) {
+	s := "hello"
+	if got := deref(&s); got != "hello" {
+		t.Errorf("deref(&s) = %q, want %q", got, "hello")
+	}
+	if got := deref(nil); got != "" {
+		t.Errorf("deref(nil) = %q, want %q", got, "")
+	}
+}
+
 func TestOutputFlagSet(t *testing.T) {
 	for _, valid := range []string{"text", "json"} {
 		var f outputFlag
