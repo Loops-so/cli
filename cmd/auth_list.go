@@ -35,13 +35,13 @@ var authListCmd = &cobra.Command{
 		}
 
 		w := newTableWriter(cmd.OutOrStdout())
-		fmt.Fprintln(w, "NAME\tAPI KEY\tACTIVE")
+		fmt.Fprintln(w, "NAME\tACTIVE\tAPI KEY\t")
 		for _, e := range entries {
 			active := ""
 			if e.Name == activeTeam {
 				active = "*"
 			}
-			fmt.Fprintf(w, "%s\t%s\t%s\n", e.Name, maskKey(e.APIKey), active)
+			fmt.Fprintf(w, "%s\t%s\t%s\n", e.Name, active, maskKey(e.APIKey))
 		}
 		return w.Flush()
 	},
