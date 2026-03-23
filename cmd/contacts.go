@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// contactFieldParams holds the contact property flags shared between create and update.
+// params common to create and update
 type contactFieldParams struct {
 	FirstName         string
 	LastName          string
@@ -20,7 +20,7 @@ type contactFieldParams struct {
 	ContactProperties map[string]any
 }
 
-// addContactFieldFlags declares the shared property flags on cmd.
+// flags common to create and update
 func addContactFieldFlags(cmd *cobra.Command) {
 	cmd.Flags().String("first-name", "", "First name")
 	cmd.Flags().String("last-name", "", "Last name")
@@ -30,7 +30,7 @@ func addContactFieldFlags(cmd *cobra.Command) {
 	cmd.Flags().String("contact-props", "", "Path to a JSON file of contact properties")
 }
 
-// contactFieldParamsFromCmd reads the shared property flags from cmd.
+// read common flags
 func contactFieldParamsFromCmd(cmd *cobra.Command) (contactFieldParams, error) {
 	firstName, _ := cmd.Flags().GetString("first-name")
 	lastName, _ := cmd.Flags().GetString("last-name")
@@ -232,6 +232,40 @@ var contactsUpdateCmd = &cobra.Command{
 	},
 }
 
+// delete
+
+func runContactsDelete(cfg *config.Config, email, userID string) error {
+	return api.NewClient(cfg.EndpointURL, cfg.APIKey).DeleteContact(email, userID)
+}
+
+var contactsDeleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "Delete a contact",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		email, _ := cmd.Flags().GetString("email")
+		userID, _ := cmd.Flags().GetString("user-id")
+
+		if (email == "") == (userID == "") {
+			return fmt.Errorf("exactly one of --email or --user-id is required")
+		}
+
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		if err := runContactsDelete(cfg, email, userID); err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), Result{Success: true})
+		}
+		fmt.Fprintln(cmd.OutOrStdout(), "Deleted.")
+		return nil
+	},
+}
+
 func init() {
 	contactsFindCmd.Flags().StringP("email", "e", "", "Contact email address")
 	contactsFindCmd.Flags().StringP("user-id", "u", "", "Contact user ID")
@@ -248,6 +282,10 @@ func init() {
 	contactsUpdateCmd.Flags().StringP("user-id", "u", "", "User ID")
 	addContactFieldFlags(contactsUpdateCmd)
 	contactsCmd.AddCommand(contactsUpdateCmd)
+
+	contactsDeleteCmd.Flags().StringP("email", "e", "", "Contact email address")
+	contactsDeleteCmd.Flags().StringP("user-id", "u", "", "Contact user ID")
+	contactsCmd.AddCommand(contactsDeleteCmd)
 
 	rootCmd.AddCommand(contactsCmd)
 }
