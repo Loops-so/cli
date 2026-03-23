@@ -145,6 +145,38 @@ func (c *Client) UpdateContact(req UpdateContactRequest) error {
 	return nil
 }
 
+func (c *Client) DeleteContact(email, userID string) error {
+	body := make(map[string]any)
+	if email != "" {
+		body["email"] = email
+	}
+	if userID != "" {
+		body["userId"] = userID
+	}
+
+	b, err := json.Marshal(body)
+	if err != nil {
+		return fmt.Errorf("failed to encode request: %w", err)
+	}
+
+	httpReq, err := c.newRequest(http.MethodPost, "/contacts/delete", bytes.NewReader(b))
+	if err != nil {
+		return err
+	}
+
+	resp, err := c.do(httpReq)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return errorFromResponse(resp)
+	}
+
+	return nil
+}
+
 type FindContactParams struct {
 	Email  string
 	UserID string

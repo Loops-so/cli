@@ -160,6 +160,88 @@ func TestCreateContact(t *testing.T) {
 	}
 }
 
+func TestDeleteContact(t *testing.T) {
+	tests := []struct {
+		name       string
+		email      string
+		userID     string
+		statusCode int
+		body       string
+		wantAPIErr *APIError
+		wantBody   map[string]any
+	}{
+		{
+			name:       "success by email",
+			email:      "bob@example.com",
+			statusCode: http.StatusOK,
+			body:       `{"success":true,"message":"Contact deleted."}`,
+			wantBody:   map[string]any{"email": "bob@example.com"},
+		},
+		{
+			name:       "success by userId",
+			userID:     "user_123",
+			statusCode: http.StatusOK,
+			body:       `{"success":true,"message":"Contact deleted."}`,
+			wantBody:   map[string]any{"userId": "user_123"},
+		},
+		{
+			name:       "not found",
+			email:      "nobody@example.com",
+			statusCode: http.StatusNotFound,
+			body:       `{"success":false,"message":"Contact not found."}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusNotFound, Message: "Contact not found."},
+		},
+		{
+			name:       "unauthorized",
+			email:      "bob@example.com",
+			statusCode: http.StatusUnauthorized,
+			body:       `{"error":"Invalid API key"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusUnauthorized, Message: "Invalid API key"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotBody map[string]any
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				json.NewDecoder(r.Body).Decode(&gotBody)
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			client := NewClient(server.URL, "test-key")
+			err := client.DeleteContact(tt.email, tt.userID)
+
+			if tt.wantBody != nil {
+				for k, v := range tt.wantBody {
+					if gotBody[k] != v {
+						t.Errorf("body[%q] = %v, want %v", k, gotBody[k], v)
+					}
+				}
+			}
+
+			if tt.wantAPIErr != nil {
+				var apiErr *APIError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("expected *APIError, got %T: %v", err, err)
+				}
+				if apiErr.StatusCode != tt.wantAPIErr.StatusCode {
+					t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, tt.wantAPIErr.StatusCode)
+				}
+				if tt.wantAPIErr.Message != "" && apiErr.Message != tt.wantAPIErr.Message {
+					t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantAPIErr.Message)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+		})
+	}
+}
+
 func TestUpdateContact(t *testing.T) {
 	boolPtr := func(b bool) *bool { return &b }
 
