@@ -16,7 +16,7 @@ var apiKeyCmd = &cobra.Command{
 	Use:   "api-key",
 	Short: "Validate your API key",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load()
+		cfg, err := loadConfig()
 		if err != nil {
 			return err
 		}

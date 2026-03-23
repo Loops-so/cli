@@ -90,7 +90,7 @@ var transactionalListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List published transactional emails",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load()
+		cfg, err := loadConfig()
 		if err != nil {
 			return err
 		}
@@ -125,7 +125,7 @@ var transactionalListCmd = &cobra.Command{
 }
 
 func transactionalSendRunE(cmd *cobra.Command, args []string) error {
-	cfg, err := config.Load()
+	cfg, err := loadConfig()
 	if err != nil {
 		return err
 	}

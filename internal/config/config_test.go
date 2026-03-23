@@ -6,30 +6,87 @@ import (
 	"github.com/zalando/go-keyring"
 )
 
-func setup(t *testing.T) {
-	t.Helper()
-	keyring.MockInit()
-}
-
 func TestLoad(t *testing.T) {
-	t.Run("errors when no api key is set", func(t *testing.T) {
+	t.Run("errors when no credentials are set", func(t *testing.T) {
 		setup(t)
 		t.Setenv("LOOPS_API_KEY", "")
 		t.Setenv("LOOPS_ENDPOINT_URL", "")
 
-		_, err := Load()
+		_, err := Load("")
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
 	})
 
-	t.Run("reads api key from keyring", func(t *testing.T) {
+	t.Run("uses team override when provided", func(t *testing.T) {
 		setup(t)
-		keyring.Set(keyringService, keyringUser, "keyring-key")
+		t.Setenv("LOOPS_API_KEY", "")
+		t.Setenv("LOOPS_ENDPOINT_URL", "")
+		Save("other-key", "other")
+		keyring.Set(keyringService, "key:acme", "acme-key")
+
+		cfg, err := Load("acme")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.APIKey != "acme-key" {
+			t.Errorf("got %q, want %q", cfg.APIKey, "acme-key")
+		}
+	})
+
+	t.Run("errors when team override key not in keyring", func(t *testing.T) {
+		setup(t)
+		t.Setenv("LOOPS_API_KEY", "")
+
+		_, err := Load("nonexistent")
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("errors when activeTeam is set but key not in keyring", func(t *testing.T) {
+		setup(t)
 		t.Setenv("LOOPS_API_KEY", "")
 		t.Setenv("LOOPS_ENDPOINT_URL", "")
 
-		cfg, err := Load()
+		if err := Save("some-key", "acme"); err != nil {
+			t.Fatalf("Save: %v", err)
+		}
+		keyring.Delete(keyringService, "key:acme")
+
+		_, err := Load("")
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("uses sole key when no active team is set", func(t *testing.T) {
+		setup(t)
+		t.Setenv("LOOPS_API_KEY", "")
+		t.Setenv("LOOPS_ENDPOINT_URL", "")
+
+		keyring.Set(keyringService, "key:acme", "acme-key")
+		SavePersistentConfig(&PersistentConfig{Teams: []string{"acme"}})
+
+		cfg, err := Load("")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.APIKey != "acme-key" {
+			t.Errorf("got %q, want %q", cfg.APIKey, "acme-key")
+		}
+	})
+
+	t.Run("reads api key from active team", func(t *testing.T) {
+		setup(t)
+		t.Setenv("LOOPS_API_KEY", "")
+		t.Setenv("LOOPS_ENDPOINT_URL", "")
+
+		if err := Save("keyring-key", "myteam"); err != nil {
+			t.Fatalf("Save: %v", err)
+		}
+
+		cfg, err := Load("")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -40,11 +97,13 @@ func TestLoad(t *testing.T) {
 
 	t.Run("env var overrides keyring api key", func(t *testing.T) {
 		setup(t)
-		keyring.Set(keyringService, keyringUser, "keyring-key")
+		if err := Save("keyring-key", "myteam"); err != nil {
+			t.Fatalf("Save: %v", err)
+		}
 		t.Setenv("LOOPS_API_KEY", "env-key")
 		t.Setenv("LOOPS_ENDPOINT_URL", "")
 
-		cfg, err := Load()
+		cfg, err := Load("")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -58,7 +117,7 @@ func TestLoad(t *testing.T) {
 		t.Setenv("LOOPS_API_KEY", "some-key")
 		t.Setenv("LOOPS_ENDPOINT_URL", "")
 
-		cfg, err := Load()
+		cfg, err := Load("")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -72,71 +131,12 @@ func TestLoad(t *testing.T) {
 		t.Setenv("LOOPS_API_KEY", "some-key")
 		t.Setenv("LOOPS_ENDPOINT_URL", "https://custom.example.com/api")
 
-		cfg, err := Load()
+		cfg, err := Load("")
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
 		if cfg.EndpointURL != "https://custom.example.com/api" {
 			t.Errorf("got %q, want %q", cfg.EndpointURL, "https://custom.example.com/api")
-		}
-	})
-}
-
-func TestSave(t *testing.T) {
-	t.Run("stores api key in keyring", func(t *testing.T) {
-		setup(t)
-
-		if err := Save("my-key"); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		got, err := keyring.Get(keyringService, keyringUser)
-		if err != nil {
-			t.Fatalf("could not read keyring: %v", err)
-		}
-		if got != "my-key" {
-			t.Errorf("got %q, want %q", got, "my-key")
-		}
-	})
-
-	t.Run("overwrites existing api key", func(t *testing.T) {
-		setup(t)
-		keyring.Set(keyringService, keyringUser, "old-key")
-
-		if err := Save("new-key"); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		got, err := keyring.Get(keyringService, keyringUser)
-		if err != nil {
-			t.Fatalf("could not read keyring: %v", err)
-		}
-		if got != "new-key" {
-			t.Errorf("got %q, want %q", got, "new-key")
-		}
-	})
-}
-
-func TestDelete(t *testing.T) {
-	t.Run("removes api key from keyring", func(t *testing.T) {
-		setup(t)
-		keyring.Set(keyringService, keyringUser, "my-key")
-
-		if err := Delete(); err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-
-		_, err := keyring.Get(keyringService, keyringUser)
-		if err != keyring.ErrNotFound {
-			t.Errorf("expected ErrNotFound, got %v", err)
-		}
-	})
-
-	t.Run("no error when no credentials stored", func(t *testing.T) {
-		setup(t)
-
-		if err := Delete(); err != nil {
-			t.Fatalf("unexpected error: %v", err)
 		}
 	})
 }

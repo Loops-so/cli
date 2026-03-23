@@ -27,7 +27,7 @@ var contactPropertiesListCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		customOnly, _ := cmd.Flags().GetBool("custom")
 
-		cfg, err := config.Load()
+		cfg, err := loadConfig()
 		if err != nil {
 			return err
 		}
@@ -67,7 +67,7 @@ var contactPropertiesCreateCmd = &cobra.Command{
 		name, _ := cmd.Flags().GetString("name")
 		propType, _ := cmd.Flags().GetString("type")
 
-		cfg, err := config.Load()
+		cfg, err := loadConfig()
 		if err != nil {
 			return err
 		}

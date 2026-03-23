@@ -13,7 +13,7 @@ var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Print the resolved configuration",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, keyResp, err := runAuthStatus()
+		cfg, keyResp, pc, err := runAuthStatus()
 		if err != nil {
 			return err
 		}
@@ -22,29 +22,40 @@ var statusCmd = &cobra.Command{
 
 		if isJSONOutput() {
 			return printJSON(cmd.OutOrStdout(), struct {
+				ActiveKey   string `json:"activeKey"`
 				APIKey      string `json:"apiKey"`
 				EndpointURL string `json:"endpointUrl"`
 				TeamName    string `json:"teamName"`
-			}{masked, cfg.EndpointURL, keyResp.TeamName})
+			}{pc.ActiveTeam, masked, cfg.EndpointURL, keyResp.TeamName})
 		}
 
-		fmt.Fprintf(cmd.OutOrStdout(), "API Key:  %s\n", masked)
-		fmt.Fprintf(cmd.OutOrStdout(), "Endpoint: %s\n", cfg.EndpointURL)
-		fmt.Fprintf(cmd.OutOrStdout(), "Team:     %s\n", keyResp.TeamName)
+		activeKey := pc.ActiveTeam
+		if activeKey == "" {
+			activeKey = "(none)"
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Active Key: %s\n", activeKey)
+		fmt.Fprintf(cmd.OutOrStdout(), "API Key:    %s\n", masked)
+		fmt.Fprintf(cmd.OutOrStdout(), "Team:       %s\n", keyResp.TeamName)
+		fmt.Fprintf(cmd.OutOrStdout(), "Endpoint:   %s\n", cfg.EndpointURL)
 		return nil
 	},
 }
 
-func runAuthStatus() (*config.Config, *api.APIKeyResponse, error) {
-	cfg, err := config.Load()
+func runAuthStatus() (*config.Config, *api.APIKeyResponse, *config.PersistentConfig, error) {
+	cfg, err := loadConfig()
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, nil, err
 	}
 	keyResp, err := api.NewClient(cfg.EndpointURL, cfg.APIKey).GetAPIKey()
 	if err != nil {
-		return nil, nil, fmt.Errorf("API key verification failed: %w", err)
+		return nil, nil, nil, fmt.Errorf("API key verification failed: %w", err)
 	}
-	return cfg, keyResp, nil
+	pc, err := config.LoadPersistentConfig()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return cfg, keyResp, pc, nil
 }
 
 func maskKey(key string) string {

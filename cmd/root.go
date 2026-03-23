@@ -7,10 +7,16 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
 var outputFormat outputFlag = "text"
+var teamFlag string
+
+func loadConfig() (*config.Config, error) {
+	return config.Load(teamFlag)
+}
 
 var rootCmd = &cobra.Command{
 	Use:           "loops",
@@ -59,4 +65,5 @@ func init() {
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	rootCmd.PersistentFlags().VarP(&outputFormat, "output", "o", "Output format (text, json)")
+	rootCmd.PersistentFlags().StringVarP(&teamFlag, "team", "t", "", "Team key name to use")
 }
