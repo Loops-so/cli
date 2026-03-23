@@ -60,6 +60,23 @@ func TestLoad(t *testing.T) {
 		}
 	})
 
+	t.Run("uses sole key when no active team is set", func(t *testing.T) {
+		setup(t)
+		t.Setenv("LOOPS_API_KEY", "")
+		t.Setenv("LOOPS_ENDPOINT_URL", "")
+
+		keyring.Set(keyringService, "key:acme", "acme-key")
+		SavePersistentConfig(&PersistentConfig{Teams: []string{"acme"}})
+
+		cfg, err := Load("")
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if cfg.APIKey != "acme-key" {
+			t.Errorf("got %q, want %q", cfg.APIKey, "acme-key")
+		}
+	})
+
 	t.Run("reads api key from active team", func(t *testing.T) {
 		setup(t)
 		t.Setenv("LOOPS_API_KEY", "")

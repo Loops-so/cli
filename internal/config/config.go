@@ -42,6 +42,11 @@ func Load(teamOverride string) (*Config, error) {
 			return nil, err
 		}
 		team = pc.ActiveTeam
+
+		// if there is only one key, use it even if its not active
+		if team == "" && len(pc.Teams) == 1 {
+			team = pc.Teams[0]
+		}
 	}
 
 	if team != "" {
