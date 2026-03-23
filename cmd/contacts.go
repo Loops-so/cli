@@ -55,17 +55,16 @@ var contactsFindCmd = &cobra.Command{
 		}
 
 		w := newTableWriter(cmd.OutOrStdout())
-		fmt.Fprintln(w, "ID\tEMAIL\tFIRST NAME\tLAST NAME\tSUBSCRIBED\tSOURCE\tUSER GROUP\tUSER ID\tOPT-IN STATUS")
+		fmt.Fprintln(w, "USER ID\tEMAIL\tFIRST NAME\tLAST NAME\tSUBSCRIBED\tSOURCE\tUSER GROUP\tOPT-IN STATUS")
 		for _, c := range contacts {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-				c.ID,
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+				deref(c.UserID),
 				c.Email,
 				deref(c.FirstName),
 				deref(c.LastName),
 				strconv.FormatBool(c.Subscribed),
 				c.Source,
 				c.UserGroup,
-				deref(c.UserID),
 				deref(c.OptInStatus),
 			)
 		}
