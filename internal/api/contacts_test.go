@@ -115,7 +115,7 @@ func TestCreateContact(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			id, err := client.CreateContact(tt.req)
 
 			if tt.wantBody != nil {
@@ -210,7 +210,7 @@ func TestDeleteContact(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			err := client.DeleteContact(tt.email, tt.userID)
 
 			if tt.wantBody != nil {
@@ -323,7 +323,7 @@ func TestUpdateContact(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			err := client.UpdateContact(tt.req)
 
 			if tt.wantBody != nil {
@@ -425,7 +425,7 @@ func TestFindContacts(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			contacts, err := client.FindContacts(tt.params)
 
 			if tt.wantQuery != "" && gotQuery != tt.wantQuery {

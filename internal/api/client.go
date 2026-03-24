@@ -1,11 +1,13 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"math/rand/v2"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -33,13 +35,15 @@ type Client struct {
 	baseURL    string
 	apiKey     string
 	httpClient *http.Client
+	debug      bool
 }
 
-func NewClient(baseURL, apiKey string) *Client {
+func NewClient(baseURL, apiKey string, debug bool) *Client {
 	return &Client{
 		baseURL:    baseURL,
 		apiKey:     apiKey,
 		httpClient: &http.Client{Timeout: 5 * time.Second},
+		debug:      debug,
 	}
 }
 
@@ -99,6 +103,17 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 
 func (c *Client) newRequest(method, path string, body io.Reader) (*http.Request, error) {
 	url := fmt.Sprintf("%s%s", c.baseURL, path)
+
+	var bodyBytes []byte
+	if body != nil && c.debug {
+		var err error
+		bodyBytes, err = io.ReadAll(body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read request body: %w", err)
+		}
+		body = bytes.NewReader(bodyBytes)
+	}
+
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -107,5 +122,22 @@ func (c *Client) newRequest(method, path string, body io.Reader) (*http.Request,
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
+
+	if c.debug {
+		fmt.Fprintf(os.Stderr, "[debug] %s %s\n", method, url)
+		fmt.Fprintf(os.Stderr, "[debug] Authorization: Bearer [REDACTED]\n")
+		if req.Header.Get("Content-Type") != "" {
+			fmt.Fprintf(os.Stderr, "[debug] Content-Type: %s\n", req.Header.Get("Content-Type"))
+		}
+		if len(bodyBytes) > 0 {
+			var pretty bytes.Buffer
+			if json.Indent(&pretty, bodyBytes, "", "  ") == nil {
+				fmt.Fprintf(os.Stderr, "[debug] Body:\n%s\n", pretty.String())
+			} else {
+				fmt.Fprintf(os.Stderr, "[debug] Body: %s\n", bodyBytes)
+			}
+		}
+	}
+
 	return req, nil
 }

@@ -35,7 +35,7 @@ func parseMailingLists(pairs []string) (map[string]bool, error) {
 }
 
 func runEventsSend(cfg *config.Config, req api.SendEventRequest) error {
-	return api.NewClient(cfg.EndpointURL, cfg.APIKey).SendEvent(req)
+	return api.NewClient(cfg.EndpointURL, cfg.APIKey, cfg.Debug).SendEvent(req)
 }
 
 var eventsCmd = &cobra.Command{

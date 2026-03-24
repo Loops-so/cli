@@ -16,6 +16,7 @@ const (
 type Config struct {
 	APIKey      string
 	EndpointURL string
+	Debug       bool
 }
 
 func EndpointURL() string {

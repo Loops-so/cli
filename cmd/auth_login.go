@@ -51,7 +51,7 @@ func runAuthLogin(apiKey, name string) (*api.APIKeyResponse, error) {
 	if name == "" {
 		return nil, errors.New("use --name to give this key a name")
 	}
-	result, err := api.NewClient(config.EndpointURL(), apiKey).GetAPIKey()
+	result, err := api.NewClient(config.EndpointURL(), apiKey, debugFlag).GetAPIKey()
 	if err != nil {
 		return nil, fmt.Errorf("API key verification failed: %w", err)
 	}
