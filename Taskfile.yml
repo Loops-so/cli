@@ -68,6 +68,8 @@ tasks:
 
   release:local:
     desc: build with goreleaser
+    dotenv:
+      - .env.signing-credentials
     cmds:
       - goreleaser release --snapshot --clean
 
