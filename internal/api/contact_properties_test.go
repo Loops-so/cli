@@ -68,7 +68,7 @@ func TestListContactProperties(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			props, err := client.ListContactProperties(tt.customOnly)
 
 			if tt.wantQuery != "" && gotQuery != tt.wantQuery {
@@ -147,7 +147,7 @@ func TestCreateContactProperty(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			err := client.CreateContactProperty("age", "number")
 
 			if tt.wantBody != nil {
@@ -186,7 +186,7 @@ func TestListContactProperties_ResponseData(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(server.URL, "test-key")
+	client := NewClient(server.URL, "test-key", false)
 	props, err := client.ListContactProperties(false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

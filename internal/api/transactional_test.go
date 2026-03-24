@@ -84,7 +84,7 @@ func TestListTransactional(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			emails, pagination, err := client.ListTransactional(PaginationParams{})
 
 			if tt.wantAPIErr != nil {
@@ -131,7 +131,7 @@ func TestListTransactional_ResponseData(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(server.URL, "test-key")
+	client := NewClient(server.URL, "test-key", false)
 	emails, pagination, err := client.ListTransactional(PaginationParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -194,7 +194,7 @@ func TestListTransactional_QueryParams(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			client.ListTransactional(tt.params)
 
 			if gotPerPage != tt.wantPerPage {
@@ -248,7 +248,7 @@ func TestSendTransactional(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			err := client.SendTransactional(SendTransactionalRequest{
 				Email:           "test@example.com",
 				TransactionalID: "abc123",
@@ -316,7 +316,7 @@ func TestSendTransactional_IdempotencyKey(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			client.SendTransactional(SendTransactionalRequest{
 				Email:           "a@b.com",
 				TransactionalID: "abc",
@@ -376,7 +376,7 @@ func TestSendTransactional_RequestBody(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			client.SendTransactional(tt.req)
 
 			if got.Email != tt.wantEmail {

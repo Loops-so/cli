@@ -51,7 +51,7 @@ func TestListMailingLists(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			lists, err := client.ListMailingLists()
 
 			if tt.wantAPIErr != nil {
@@ -95,7 +95,7 @@ func TestListMailingLists_ResponseData(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(server.URL, "test-key")
+	client := NewClient(server.URL, "test-key", false)
 	lists, err := client.ListMailingLists()
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)

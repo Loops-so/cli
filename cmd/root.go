@@ -13,9 +13,15 @@ import (
 
 var outputFormat outputFlag = "text"
 var teamFlag string
+var debugFlag bool
 
 func loadConfig() (*config.Config, error) {
-	return config.Load(teamFlag)
+	cfg, err := config.Load(teamFlag)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Debug = debugFlag
+	return cfg, nil
 }
 
 var rootCmd = &cobra.Command{
@@ -66,4 +72,5 @@ func init() {
 	// when this action is called directly.
 	rootCmd.PersistentFlags().VarP(&outputFormat, "output", "o", "Output format (text, json)")
 	rootCmd.PersistentFlags().StringVarP(&teamFlag, "team", "t", "", "Team key name to use")
+	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Print API request details before sending")
 }

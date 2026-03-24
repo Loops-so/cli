@@ -49,7 +49,7 @@ func TestSendEvent(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			err := client.SendEvent(SendEventRequest{
 				Email:     "test@example.com",
 				EventName: "signup",
@@ -176,7 +176,7 @@ func TestSendEvent_RequestBody(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			client.SendEvent(tt.req)
 
 			for key, want := range tt.wantPresent {
@@ -258,7 +258,7 @@ func TestSendEvent_IdempotencyKey(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			client.SendEvent(SendEventRequest{
 				Email:          "a@b.com",
 				EventName:      "click",

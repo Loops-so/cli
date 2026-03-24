@@ -29,7 +29,7 @@ func TestDo_RetryResetsBody(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(server.URL, "test-key")
+	client := NewClient(server.URL, "test-key", false)
 	req, _ := client.newRequest(http.MethodPost, "/", bytes.NewReader([]byte(`{"hello":"world"}`)))
 	resp, err := client.do(req)
 	if err != nil {
@@ -48,7 +48,7 @@ func TestDo_RetryResetsBody(t *testing.T) {
 }
 
 func TestNewRequest(t *testing.T) {
-	client := NewClient("https://example.com/api/v1", "test-key")
+	client := NewClient("https://example.com/api/v1", "test-key", false)
 
 	tests := []struct {
 		name   string
@@ -84,7 +84,7 @@ func TestNewRequest(t *testing.T) {
 }
 
 func TestNewRequest_InvalidURL(t *testing.T) {
-	client := NewClient("://bad-url", "test-key")
+	client := NewClient("://bad-url", "test-key", false)
 	_, err := client.newRequest(http.MethodGet, "/path", nil)
 	if err == nil {
 		t.Error("expected error for invalid URL, got nil")
@@ -206,7 +206,7 @@ func TestDo_Retries(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key")
+			client := NewClient(server.URL, "test-key", false)
 			req, _ := client.newRequest(http.MethodGet, "/", nil)
 			resp, err := client.do(req)
 			if err != nil {
