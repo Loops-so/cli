@@ -78,6 +78,15 @@ func TestContactFieldParamsFromCmd(t *testing.T) {
 		}
 	})
 
+	t.Run("invalid --subscribed returns error", func(t *testing.T) {
+		cmd := newFieldCmd(t)
+		cmd.Flags().Set("subscribed", "yes")
+		_, err := contactFieldParamsFromCmd(cmd)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
 	t.Run("invalid --list returns error", func(t *testing.T) {
 		cmd := newFieldCmd(t)
 		cmd.Flags().Set("list", "badvalue")
