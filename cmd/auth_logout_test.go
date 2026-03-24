@@ -8,7 +8,7 @@ import (
 func TestRunAuthLogout(t *testing.T) {
 	t.Run("succeeds", func(t *testing.T) {
 		serveJSON(t, http.StatusOK, `{}`)
-		runAuthLogin("test-key", "acme")
+		runAuthLogin("test-key", "acme", true)
 		if err := runAuthLogout("acme"); err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
