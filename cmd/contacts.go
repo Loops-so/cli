@@ -24,7 +24,7 @@ type contactFieldParams struct {
 func addContactFieldFlags(cmd *cobra.Command) {
 	cmd.Flags().String("first-name", "", "First name")
 	cmd.Flags().String("last-name", "", "Last name")
-	cmd.Flags().BoolP("subscribed", "s", false, "Subscribed status")
+	cmd.Flags().StringP("subscribed", "s", "", `Subscribed status ("true" or "false")`)
 	cmd.Flags().String("user-group", "", "User group")
 	cmd.Flags().StringArray("list", nil, "Mailing list subscription as id=true|false (repeatable)")
 	cmd.Flags().String("contact-props", "", "Path to a JSON file of contact properties")
@@ -43,8 +43,17 @@ func contactFieldParamsFromCmd(cmd *cobra.Command) (contactFieldParams, error) {
 	}
 
 	if cmd.Flags().Changed("subscribed") {
-		sub, _ := cmd.Flags().GetBool("subscribed")
-		params.Subscribed = &sub
+		subStr, _ := cmd.Flags().GetString("subscribed")
+		switch subStr {
+		case "true":
+			b := true
+			params.Subscribed = &b
+		case "false":
+			b := false
+			params.Subscribed = &b
+		default:
+			return params, fmt.Errorf("--subscribed must be \"true\" or \"false\"")
+		}
 	}
 
 	listPairs, _ := cmd.Flags().GetStringArray("list")
