@@ -13,6 +13,7 @@ import (
 )
 
 var loginName string
+var loginSkipVerify bool
 
 var loginCmd = &cobra.Command{
 	Use:   "login",
@@ -34,22 +35,36 @@ var loginCmd = &cobra.Command{
 			return fmt.Errorf("API key cannot be empty")
 		}
 
-		result, err := runAuthLogin(apiKey, loginName)
+		result, err := runAuthLogin(apiKey, loginName, loginSkipVerify)
 		if err != nil {
 			return err
 		}
 
 		if isJSONOutput() {
-			return printJSON(cmd.OutOrStdout(), Result{Success: true, Message: fmt.Sprintf("Authenticated as team: %s", result.TeamName)})
+			msg := fmt.Sprintf("API key saved as %q", loginName)
+			if result != nil {
+				msg = fmt.Sprintf("Authenticated as team: %s", result.TeamName)
+			}
+			return printJSON(cmd.OutOrStdout(), Result{Success: true, Message: msg})
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "API key saved as %q. Authenticated as team: %s\n", loginName, result.TeamName)
+		if result != nil {
+			fmt.Fprintf(cmd.OutOrStdout(), "API key saved as %q. Authenticated as team: %s\n", loginName, result.TeamName)
+		} else {
+			fmt.Fprintf(cmd.OutOrStdout(), "API key saved as %q.\n", loginName)
+		}
 		return nil
 	},
 }
 
-func runAuthLogin(apiKey, name string) (*api.APIKeyResponse, error) {
+func runAuthLogin(apiKey, name string, skipVerify bool) (*api.APIKeyResponse, error) {
 	if name == "" {
 		return nil, errors.New("use --name to give this key a name")
+	}
+	if skipVerify {
+		if err := config.Save(apiKey, name); err != nil {
+			return nil, err
+		}
+		return nil, nil
 	}
 	result, err := api.NewClient(config.EndpointURL(), apiKey, debugFlag).GetAPIKey()
 	if err != nil {
@@ -63,5 +78,6 @@ func runAuthLogin(apiKey, name string) (*api.APIKeyResponse, error) {
 
 func init() {
 	loginCmd.Flags().StringVarP(&loginName, "name", "n", "", "Name for this API key (e.g. my-team)")
+	loginCmd.Flags().BoolVar(&loginSkipVerify, "skip-verify", false, "Save the API key without verifying it")
 	authCmd.AddCommand(loginCmd)
 }
