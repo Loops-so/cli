@@ -61,7 +61,7 @@ tasks:
       - gh release delete {{.tag}} --yes --cleanup-tag
       - task: release
         vars:
-          tag: '{{.tag}}'
+          tag: "{{.tag}}"
     preconditions:
       - sh: '[ "$(git branch --show-current)" = "main" ]'
         msg: make sure you're on main
@@ -73,4 +73,4 @@ tasks:
 
   release:check:
     cmds:
-    - goreleaser check
+      - goreleaser check
