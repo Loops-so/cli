@@ -66,7 +66,7 @@ func runAuthLogin(apiKey, name string, skipVerify bool) (*api.APIKeyResponse, er
 		}
 		return nil, nil
 	}
-	result, err := api.NewClient(config.EndpointURL(), apiKey, debugFlag).WithUserAgent("loops-cli/"+version).GetAPIKey()
+	result, err := newAPIClient(&config.Config{EndpointURL: config.EndpointURL(), APIKey: apiKey, Debug: debugFlag}).GetAPIKey()
 	if err != nil {
 		return nil, fmt.Errorf("API key verification failed: %w", err)
 	}
