@@ -36,6 +36,7 @@ type Client struct {
 	apiKey     string
 	httpClient *http.Client
 	debug      bool
+	userAgent  string
 }
 
 func NewClient(baseURL, apiKey string, debug bool) *Client {
@@ -44,7 +45,13 @@ func NewClient(baseURL, apiKey string, debug bool) *Client {
 		apiKey:     apiKey,
 		httpClient: &http.Client{Timeout: 5 * time.Second},
 		debug:      debug,
+		userAgent:  "loops-go/dev",
 	}
+}
+
+func (c *Client) WithUserAgent(ua string) *Client {
+	c.userAgent = ua
+	return c
 }
 
 func errorFromResponse(resp *http.Response) *APIError {
@@ -119,6 +126,7 @@ func (c *Client) newRequest(method, path string, body io.Reader) (*http.Request,
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.apiKey)
+	req.Header.Set("User-Agent", c.userAgent)
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}

@@ -79,7 +79,22 @@ func TestNewRequest(t *testing.T) {
 			if got := req.Header.Get("Authorization"); got != wantAuth {
 				t.Errorf("Authorization = %q, want %q", got, wantAuth)
 			}
+
+			if got := req.Header.Get("User-Agent"); got != "loops-go/dev" {
+				t.Errorf("User-Agent = %q, want %q", got, "loops-go/dev")
+			}
 		})
+	}
+}
+
+func TestWithUserAgent(t *testing.T) {
+	client := NewClient("https://example.com/api/v1", "test-key", false).WithUserAgent("loops-cli/1.2.3")
+	req, err := client.newRequest(http.MethodGet, "/api-key", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got := req.Header.Get("User-Agent"); got != "loops-cli/1.2.3" {
+		t.Errorf("User-Agent = %q, want %q", got, "loops-cli/1.2.3")
 	}
 }
 
