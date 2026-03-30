@@ -9,7 +9,7 @@ import (
 )
 
 func runAPIKey(cfg *config.Config) (*api.APIKeyResponse, error) {
-	return api.NewClient(cfg.EndpointURL, cfg.APIKey, cfg.Debug).GetAPIKey()
+	return newAPIClient(cfg).GetAPIKey()
 }
 
 var apiKeyCmd = &cobra.Command{
