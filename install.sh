@@ -16,7 +16,11 @@ github_release() {
   version=$2
   header=$3
   test -z "$version" && version="latest"
-  giturl="https://api.github.com/repos/${owner_repo}/releases/${version}"
+  if [ "$version" = "latest" ]; then
+    giturl="https://api.github.com/repos/${owner_repo}/releases/latest"
+  else
+    giturl="https://api.github.com/repos/${owner_repo}/releases/tags/${version}"
+  fi
   json=$(http_copy "$giturl" "$header")
   test -z "$json" && return 1
   version=$(echo "$json" | tr -s '\n' ' ' | sed 's/.*"tag_name": *"//' | sed 's/".*//')
@@ -202,7 +206,7 @@ execute() {
   if [ "$OS" = "windows" ]; then
     SHORT_BIN_NAME="${SHORT_BIN_NAME}.exe"
   fi
-  install "${TMPDIR}/${PROJ_NAME}_${OS}_${ARCH}/${SHORT_BIN_NAME}" "${INSTALL_DIR}/${SHORT_BIN_NAME}"
+  install "${TMPDIR}/${SHORT_BIN_NAME}" "${INSTALL_DIR}/${SHORT_BIN_NAME}"
 
   rm -rf "$TMPDIR"
 }
