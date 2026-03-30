@@ -5,6 +5,20 @@ The official Loops CLI
 > [!NOTE]
 > This is pre-release, alpha software. While we're cooking up our first official release, the easiest way to get started is to build the project yourself.
 
+## Install
+
+Install script,
+```
+# latest release
+curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/loops-so/cli/main/install.sh | bash
+
+# specify the release version, "latest" or a release from GH, e.g., v0.0.0
+curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/loops-so/cli/main/install.sh | bash -- v0.0.0
+
+# install to a specific path (requires version)
+curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/loops-so/cli/main/install.sh | bash -- latest ~/bin
+```
+
 ## Getting Started
 
 ### Build
