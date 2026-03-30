@@ -64,7 +64,7 @@ func attachmentFromPath(path string) (api.Attachment, error) {
 }
 
 func runTransactionalList(cfg *config.Config, params api.PaginationParams) ([]api.TransactionalEmail, error) {
-	client := api.NewClient(cfg.EndpointURL, cfg.APIKey, cfg.Debug)
+	client := newAPIClient(cfg)
 	if params.Cursor != "" {
 		emails, _, err := client.ListTransactional(params)
 		return emails, err
@@ -78,7 +78,7 @@ func runTransactionalList(cfg *config.Config, params api.PaginationParams) ([]ap
 }
 
 func runTransactionalSend(cfg *config.Config, req api.SendTransactionalRequest) error {
-	return api.NewClient(cfg.EndpointURL, cfg.APIKey, cfg.Debug).SendTransactional(req)
+	return newAPIClient(cfg).SendTransactional(req)
 }
 
 var transactionalCmd = &cobra.Command{

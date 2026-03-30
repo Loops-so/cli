@@ -9,7 +9,7 @@ import (
 )
 
 func runListsList(cfg *config.Config) ([]api.MailingList, error) {
-	return api.NewClient(cfg.EndpointURL, cfg.APIKey, cfg.Debug).ListMailingLists()
+	return newAPIClient(cfg).ListMailingLists()
 }
 
 var listsCmd = &cobra.Command{

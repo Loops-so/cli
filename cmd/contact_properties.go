@@ -9,11 +9,11 @@ import (
 )
 
 func runContactPropertiesList(cfg *config.Config, customOnly bool) ([]api.ContactProperty, error) {
-	return api.NewClient(cfg.EndpointURL, cfg.APIKey, cfg.Debug).ListContactProperties(customOnly)
+	return newAPIClient(cfg).ListContactProperties(customOnly)
 }
 
 func runContactPropertiesCreate(cfg *config.Config, name, propType string) error {
-	return api.NewClient(cfg.EndpointURL, cfg.APIKey, cfg.Debug).CreateContactProperty(name, propType)
+	return newAPIClient(cfg).CreateContactProperty(name, propType)
 }
 
 var contactPropertiesCmd = &cobra.Command{

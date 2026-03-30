@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -14,6 +15,11 @@ import (
 var outputFormat outputFlag = "text"
 var teamFlag string
 var debugFlag bool
+
+func newAPIClient(cfg *config.Config) *api.Client {
+	return api.NewClient(cfg.EndpointURL, cfg.APIKey, cfg.Debug).
+		WithUserAgent("loops-cli/" + version)
+}
 
 func loadConfig() (*config.Config, error) {
 	cfg, err := config.Load(teamFlag)

@@ -47,7 +47,7 @@ func runAuthStatus() (*config.Config, *api.APIKeyResponse, *config.PersistentCon
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	keyResp, err := api.NewClient(cfg.EndpointURL, cfg.APIKey, cfg.Debug).GetAPIKey()
+	keyResp, err := newAPIClient(cfg).GetAPIKey()
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("API key verification failed: %w", err)
 	}
