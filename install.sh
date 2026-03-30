@@ -5,7 +5,7 @@ GH_REPO="loops-so/cli"
 GH_ASSETS_URL="https://github.com/${GH_REPO}/releases/download"
 
 #
-# functions from https://github.com/client9/shlib
+# functions adapted from https://github.com/client9/shlib
 #
 echoerr() {
   echo "$@" 1>&2
@@ -33,9 +33,9 @@ http_download_curl() {
   source_url=$2
   header=$3
   if [ -z "$header" ]; then
-    code=$(curl -w '%{http_code}' -sL -o "$local_file" "$source_url")
+    code=$(curl -w '%{http_code}' -sL --proto '=https' --tlsv1.2 -o "$local_file" "$source_url")
   else
-    code=$(curl -w '%{http_code}' -sL -H "$header" -o "$local_file" "$source_url")
+    code=$(curl -w '%{http_code}' -sL --proto '=https' --tlsv1.2 -H "$header" -o "$local_file" "$source_url")
   fi
   if [ "$code" != "200" ]; then
     log_debug "http_download_curl received HTTP status $code"
@@ -159,6 +159,46 @@ uname_os() {
   echo "$os"
 }
 
+hash_sha256() {
+  TARGET=${1:-/dev/stdin}
+  if is_command gsha256sum; then
+    hash=$(gsha256sum "$TARGET") || return 1
+    echo "$hash" | cut -d ' ' -f 1
+  elif is_command sha256sum; then
+    hash=$(sha256sum "$TARGET") || return 1
+    echo "$hash" | cut -d ' ' -f 1
+  elif is_command shasum; then
+    hash=$(shasum -a 256 "$TARGET" 2>/dev/null) || return 1
+    echo "$hash" | cut -d ' ' -f 1
+  elif is_command openssl; then
+    hash=$(openssl -dst openssl dgst -sha256 "$TARGET") || return 1
+    echo "$hash" | cut -d ' ' -f a
+  else
+    log_crit "hash_sha256 unable to find command to compute sha-256 hash"
+    return 1
+  fi
+}
+
+hash_sha256_verify() {
+  TARGET=$1
+  checksums=$2
+  if [ -z "$checksums" ]; then
+    log_err "hash_sha256_verify checksum file not specified in arg2"
+    return 1
+  fi
+  BASENAME=${TARGET##*/}
+  want=$(grep "${BASENAME}" "${checksums}" 2>/dev/null | tr '\\t' ' ' | cut -d ' ' -f 1)
+  if [ -z "$want" ]; then
+    log_err "hash_sha256_verify unable to find checksum for '${TARGET}' in '${checksums}'"
+    return 1
+  fi
+  got=$(hash_sha256 "$TARGET")
+  if [ "$want" != "$got" ]; then
+    log_err "hash_sha256_verify checksum for '$TARGET' did not verify ${want} vs $got"
+    return 1
+  fi
+}
+
 untar() {
   tarball=$1
   case "${tarball}" in
@@ -193,6 +233,9 @@ else
   GH_RELEASE_FILENAME="${PROJ_NAME}_${OS}_${ARCH}.tar.gz"
 fi
 DOWNLOAD_URL="${GH_ASSETS_URL}/${GH_RELEASE}/${GH_RELEASE_FILENAME}"
+VERSION_NO_V=$(echo "$GH_RELEASE" | sed 's/^v//')
+CHECKSUMS_FILENAME="${PROJ_NAME}_${VERSION_NO_V}_checksums.txt"
+CHECKSUMS_URL="${GH_ASSETS_URL}/${GH_RELEASE}/${CHECKSUMS_FILENAME}"
 
 execute() {
   TMPDIR=$(mktemp -d)
@@ -200,6 +243,11 @@ execute() {
     log_err "Failed to download $DOWNLOAD_URL"
     return 1
   fi
+  if ! http_download "${TMPDIR}/${CHECKSUMS_FILENAME}" "$CHECKSUMS_URL" "$AUTH_HEADER"; then
+    log_err "Failed to download checksums from $CHECKSUMS_URL"
+    return 1
+  fi
+  hash_sha256_verify "${TMPDIR}/${GH_RELEASE_FILENAME}" "${TMPDIR}/${CHECKSUMS_FILENAME}"
   (cd "$TMPDIR" && untar "$GH_RELEASE_FILENAME")
   mkdir -p "$INSTALL_DIR"
 
