@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+# yaml-language-server: $schema=https://goreleaser.com/static/schema-pro.json
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
 version: 2
@@ -37,6 +37,8 @@ archives:
 
 homebrew_casks:
   - name: loops
+    alternative_names:
+      - loops@{{ .Version }}
     repository:
       owner: loops-so
       name: homebrew-loops
