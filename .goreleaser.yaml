@@ -35,5 +35,15 @@ archives:
       - goos: windows
         formats: [zip]
 
+homebrew_casks:
+  - name: loops
+    repository:
+      owner: loops-so
+      name: homebrew-loops
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+    homepage: https://loops.so
+    description: Official CLI for Loops
+    binaries: [loops]
+
 changelog:
   use: github-native
