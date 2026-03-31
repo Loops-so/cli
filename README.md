@@ -7,7 +7,14 @@ The official Loops CLI
 
 ## Installation
 
-Installation script,
+### Homebrew
+
+```
+brew tap loops-so/loops
+brew install --cask loops
+```
+
+### Script
 
 ```
 curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/loops-so/cli/main/install.sh | bash
