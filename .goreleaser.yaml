@@ -44,6 +44,13 @@ homebrew_casks:
     homepage: https://loops.so
     description: Official CLI for Loops
     binaries: [loops]
+    # TODO: remove this after we're signing the binary
+    hooks:
+      post:
+        install: |
+          if OS.mac?
+            system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/loops"]
+          end
 
 changelog:
   use: github-native
