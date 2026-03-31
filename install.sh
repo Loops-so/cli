@@ -219,7 +219,7 @@ OS=$(uname_os)
 ARCH=$(uname_arch)
 
 TAG="${1-latest}"
-INSTALL_DIR="${2-./bin}"
+INSTALL_DIR="${2-$HOME/.local/bin}"
 PROJ_NAME="loops_cli"
 SHORT_BIN_NAME="loops"
 AUTH_HEADER=""
