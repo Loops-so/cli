@@ -1,9 +1,17 @@
 # Loops CLI
 
-The official Loops CLI
+Manage your [Loops](https://loops.so) account from the terminal — send transactional emails, manage contacts, events, mailing lists, and more.
 
 > [!NOTE]
 > This is pre-release, alpha software. While we're cooking up our first official release there may be breaking changes and other bugs.
+
+## Usage
+
+```
+loops [command] [flags]
+```
+
+Run `loops --help` to see available commands, or `loops [command] --help` for details on a specific command.
 
 ## Installation
 
@@ -15,30 +23,33 @@ brew install loops-so/tap/loops
 
 ### Script
 
-```
+```bash
 curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/loops-so/cli/main/install.sh | bash
 ```
 
-You can optionally specify the release version and installation path with positional arguments,
+To install a specific version or to a custom path, append `-s -- <version> <path>` to `bash` in the command above. The default installation path is `~/.local/bin`.
 
-```
-... | bash -s -- v0.0.0
+## Auth
 
-```
+The CLI requires a Loops API key. Get one from [Settings > API](https://app.loops.so/settings?page=api).
 
-```
-... | bash -s -- latest ~/.local/bin
-```
+### Keyring storage
 
-## Getting Started
+Store a key with `loops auth login --name <name>`. Run this again with a different name to store keys for multiple teams.
 
-### Auth
+- `loops auth use <name>` — set a stored key as the default
+- `loops auth list` — list stored keys and see which is the default
 
-The Loops CLI requires a Loops API key to use.
+Use `--team <name>` on any command to pick a specific stored key.
 
-1. Grab an API key from https://app.loops.so/settings?page=api
-1. `loops auth login --name name-for-your-key`
+### Environment variable
 
-Alternatively, Loops will use the value from the `LOOPS_API_KEY` environment variable if set.
+Set `LOOPS_API_KEY` to use a key directly — useful for CI or when keyring storage isn't available.
 
-That's it! During development, consider the CLI's `--help` output as the source of truth for features and flags.
+### Precedence
+
+When multiple keys are available, the CLI resolves them in this order:
+
+1. `LOOPS_API_KEY` env var
+1. `--team` flag
+1. The current default (set via `loops auth use`)
