@@ -41,7 +41,7 @@ homebrew_casks:
       - loops@{{ .Version }}
     repository:
       owner: loops-so
-      name: homebrew-loops
+      name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     homepage: https://loops.so
     description: Official CLI for Loops

@@ -10,8 +10,7 @@ The official Loops CLI
 ### Homebrew
 
 ```
-brew tap loops-so/loops
-brew install --cask loops
+brew install loops-so/tap/loops
 ```
 
 ### Script
