@@ -30,15 +30,27 @@ You can optionally specify the release version and installation path with positi
 ... | bash -s -- latest ~/.local/bin
 ```
 
-## Getting Started
+## Auth
 
-### Auth
+The CLI requires a Loops API key. Get one from [Settings > API](https://app.loops.so/settings?page=api).
 
-The Loops CLI requires a Loops API key to use.
+### Keyring storage
 
-1. Grab an API key from https://app.loops.so/settings?page=api
-1. `loops auth login --name name-for-your-key`
+Store a key with `loops auth login --name <name>`. Run this again with a different name to store keys for multiple teams.
 
-Alternatively, Loops will use the value from the `LOOPS_API_KEY` environment variable if set.
+- `loops auth use <name>` — set a stored key as the default
+- `loops auth list` — list stored keys and see which is the default
 
-That's it! During development, consider the CLI's `--help` output as the source of truth for features and flags.
+Use `--team <name>` on any command to pick a specific stored key.
+
+### Environment variable
+
+Set `LOOPS_API_KEY` to use a key directly — useful for CI or when keyring storage isn't available.
+
+### Precedence
+
+When multiple keys are available, the CLI resolves them in this order:
+
+1. `LOOPS_API_KEY` env var
+1. `--team` flag
+1. The current default (set via `loops auth use`)
