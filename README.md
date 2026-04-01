@@ -5,6 +5,14 @@ Manage your [Loops](https://loops.so) account from the terminal — send transac
 > [!NOTE]
 > This is pre-release, alpha software. While we're cooking up our first official release there may be breaking changes and other bugs.
 
+## Usage
+
+```
+loops [command] [flags]
+```
+
+Run `loops --help` to see available commands, or `loops [command] --help` for details on a specific command.
+
 ## Installation
 
 ### Homebrew
