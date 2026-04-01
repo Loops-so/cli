@@ -37,6 +37,7 @@ archives:
 
 homebrew_casks:
   - name: loops
+    skip_upload: auto
     alternative_names:
       - loops@{{ .Version }}
     repository:
