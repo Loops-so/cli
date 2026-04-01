@@ -46,23 +46,8 @@ tasks:
       - git tag {{.tag}}
       - git push origin {{.tag}}
     preconditions:
-      - sh: '[ "$(git branch --show-current)" = "main" ]'
-        msg: make sure you're on main
-
-  release:republish:
-    desc: republish a cli version
-    deps:
-      - release:check
-    requires:
-      vars:
-        - tag
-    cmds:
-      - git pull --rebase
-      - gh release delete {{.tag}} --yes --cleanup-tag
-      - task: release
-        vars:
-          tag: '{{.tag}}'
-    preconditions:
+      - sh: "! git ls-remote --tags origin {{.tag}} | grep -q ."
+        msg: "tag {{.tag}} already exists on remote"
       - sh: '[ "$(git branch --show-current)" = "main" ]'
         msg: make sure you're on main
 
