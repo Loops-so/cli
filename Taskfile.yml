@@ -46,7 +46,7 @@ tasks:
       - git tag {{.tag}}
       - git push origin {{.tag}}
     preconditions:
-      - sh: "! git ls-remote --tags origin {{.tag}} | grep -q ."
+      - sh: '[ -z "$(git ls-remote --tags origin refs/tags/{{.tag}})" ]'
         msg: "tag {{.tag}} already exists on remote"
       - sh: '[ "$(git branch --show-current)" = "main" ]'
         msg: make sure you're on main
