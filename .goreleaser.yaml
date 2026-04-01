@@ -54,5 +54,8 @@ homebrew_casks:
             system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/loops"]
           end
 
+release:
+  prerelease: auto
+
 changelog:
   use: github-native
