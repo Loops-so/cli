@@ -1,6 +1,6 @@
 # Loops CLI
 
-The official Loops CLI
+Manage your [Loops](https://loops.so) account from the terminal — send transactional emails, manage contacts, events, mailing lists, and more.
 
 > [!NOTE]
 > This is pre-release, alpha software. While we're cooking up our first official release there may be breaking changes and other bugs.
