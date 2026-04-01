@@ -1,0 +1,29 @@
+name: test-install
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: install (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          INSTALL_DIR="$HOME/.loops-test"
+          sh install.sh latest "$INSTALL_DIR"
+      - shell: bash
+        run: |
+          INSTALL_DIR="$HOME/.loops-test"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            "$INSTALL_DIR/loops.exe" version
+          else
+            "$INSTALL_DIR/loops" version
+          fi
