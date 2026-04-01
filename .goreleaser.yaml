@@ -37,6 +37,7 @@ archives:
 
 homebrew_casks:
   - name: loops
+    skip_upload: auto
     alternative_names:
       - loops@{{ .Version }}
     repository:
@@ -53,6 +54,9 @@ homebrew_casks:
           if OS.mac?
             system_command "/usr/bin/xattr", args: ["-dr", "com.apple.quarantine", "#{staged_path}/loops"]
           end
+
+release:
+  prerelease: auto
 
 changelog:
   use: github-native
