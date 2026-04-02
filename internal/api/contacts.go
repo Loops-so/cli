@@ -177,6 +177,94 @@ func (c *Client) DeleteContact(email, userID string) error {
 	return nil
 }
 
+type ContactSuppression struct {
+	Contact struct {
+		ID     string  `json:"id"`
+		Email  string  `json:"email"`
+		UserID *string `json:"userId"`
+	} `json:"contact"`
+	IsSuppressed bool `json:"isSuppressed"`
+	RemovalQuota struct {
+		Limit     int `json:"limit"`
+		Remaining int `json:"remaining"`
+	} `json:"removalQuota"`
+}
+
+type ContactSuppressionRemoval struct {
+	Success      bool   `json:"success"`
+	Message      string `json:"message"`
+	RemovalQuota struct {
+		Limit     int `json:"limit"`
+		Remaining int `json:"remaining"`
+	} `json:"removalQuota"`
+}
+
+func (c *Client) CheckContactSuppression(email, userID string) (*ContactSuppression, error) {
+	req, err := c.newRequest(http.MethodGet, "/contacts/suppression", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	if email != "" {
+		q.Set("email", email)
+	}
+	if userID != "" {
+		q.Set("userId", userID)
+	}
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errorFromResponse(resp)
+	}
+
+	var result ContactSuppression
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &result, nil
+}
+
+func (c *Client) RemoveContactSuppression(email, userID string) (*ContactSuppressionRemoval, error) {
+	req, err := c.newRequest(http.MethodDelete, "/contacts/suppression", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	q := req.URL.Query()
+	if email != "" {
+		q.Set("email", email)
+	}
+	if userID != "" {
+		q.Set("userId", userID)
+	}
+	req.URL.RawQuery = q.Encode()
+
+	resp, err := c.do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errorFromResponse(resp)
+	}
+
+	var result ContactSuppressionRemoval
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &result, nil
+}
+
 type FindContactParams struct {
 	Email  string
 	UserID string
