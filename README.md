@@ -21,13 +21,19 @@ Run `loops --help` to see available commands, or `loops [command] --help` for de
 brew install loops-so/tap/loops
 ```
 
-### Script
+### Script for macOS, Linux, Windows via WSL
 
 ```bash
 curl -fsSL --proto '=https' --tlsv1.2 https://raw.githubusercontent.com/loops-so/cli/main/install.sh | bash
 ```
 
 To install a specific version or to a custom path, append `-s -- <version> <path>` to `bash` in the command above. The default installation path is `~/.local/bin`.
+
+### Script for Windows PowerShell
+
+```
+irm https://raw.githubusercontent.com/Loops-so/cli/main/install.ps1 | iex
+```
 
 ## Auth
 
