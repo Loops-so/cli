@@ -54,10 +54,51 @@ var contactsSuppressionCheckCmd = &cobra.Command{
 	},
 }
 
+// remove
+
+func runContactsSuppressionRemove(cfg *config.Config, email, userID string) (*api.ContactSuppressionRemoval, error) {
+	return newAPIClient(cfg).RemoveContactSuppression(email, userID)
+}
+
+var contactsSuppressionRemoveCmd = &cobra.Command{
+	Use:   "remove",
+	Short: "Remove a contact from the suppression list",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		email, _ := cmd.Flags().GetString("email")
+		userID, _ := cmd.Flags().GetString("user-id")
+
+		if (email == "") == (userID == "") {
+			return fmt.Errorf("exactly one of --email or --user-id is required")
+		}
+
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		result, err := runContactsSuppressionRemove(cfg, email, userID)
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), result)
+		}
+
+		fmt.Fprintln(cmd.OutOrStdout(), result.Message)
+		fmt.Fprintf(cmd.OutOrStdout(), "Removal quota: %d/%d remaining\n", result.RemovalQuota.Remaining, result.RemovalQuota.Limit)
+		return nil
+	},
+}
+
 func init() {
 	contactsSuppressionCheckCmd.Flags().StringP("email", "e", "", "Contact email address")
 	contactsSuppressionCheckCmd.Flags().StringP("user-id", "u", "", "Contact user ID")
 	contactsSuppressionCmd.AddCommand(contactsSuppressionCheckCmd)
+
+	contactsSuppressionRemoveCmd.Flags().StringP("email", "e", "", "Contact email address")
+	contactsSuppressionRemoveCmd.Flags().StringP("user-id", "u", "", "Contact user ID")
+	contactsSuppressionCmd.AddCommand(contactsSuppressionRemoveCmd)
 
 	contactsCmd.AddCommand(contactsSuppressionCmd)
 }
