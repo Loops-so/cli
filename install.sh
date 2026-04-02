@@ -14,14 +14,13 @@ echoerr() {
 github_release() {
   owner_repo=$1
   version=$2
-  header=$3
   test -z "$version" && version="latest"
   if [ "$version" = "latest" ]; then
     giturl="https://api.github.com/repos/${owner_repo}/releases/latest"
   else
     giturl="https://api.github.com/repos/${owner_repo}/releases/tags/${version}"
   fi
-  json=$(http_copy "$giturl" "$header")
+  json=$(http_copy "$giturl")
   test -z "$json" && return 1
   version=$(echo "$json" | tr -s '\n' ' ' | sed 's/.*"tag_name": *"//' | sed 's/".*//')
   test -z "$version" && return 1
@@ -31,12 +30,7 @@ github_release() {
 http_download_curl() {
   local_file=$1
   source_url=$2
-  header=$3
-  if [ -z "$header" ]; then
-    code=$(curl -w '%{http_code}' -sL --proto '=https' --tlsv1.2 -o "$local_file" "$source_url")
-  else
-    code=$(curl -w '%{http_code}' -sL --proto '=https' --tlsv1.2 -H "$header" -o "$local_file" "$source_url")
-  fi
+  code=$(curl -w '%{http_code}' -sL --proto '=https' --tlsv1.2 -o "$local_file" "$source_url")
   if [ "$code" != "200" ]; then
     log_debug "http_download_curl received HTTP status $code"
     return 1
@@ -47,12 +41,7 @@ http_download_curl() {
 http_download_wget() {
   local_file=$1
   source_url=$2
-  header=$3
-  if [ -z "$header" ]; then
-    wget -q -O "$local_file" "$source_url"
-  else
-    wget -q --header "$header" -O "$local_file" "$source_url"
-  fi
+  wget -q -O "$local_file" "$source_url"
 }
 
 http_download() {
@@ -70,7 +59,7 @@ http_download() {
 
 http_copy() {
   tmp=$(mktemp)
-  http_download "${tmp}" "$1" "$2" || return 1
+  http_download "${tmp}" "$1" || return 1
   body=$(cat "$tmp")
   rm -f "${tmp}"
   echo "$body"
@@ -222,11 +211,7 @@ TAG="${1-latest}"
 INSTALL_DIR="${2-$HOME/.local/bin}"
 PROJ_NAME="loops_cli"
 SHORT_BIN_NAME="loops"
-AUTH_HEADER=""
-if [ -n "$GITHUB_TOKEN" ]; then
-  AUTH_HEADER="Authorization: Bearer ${GITHUB_TOKEN}"
-fi
-GH_RELEASE=$(github_release "$GH_REPO" "$TAG" "$AUTH_HEADER")
+GH_RELEASE=$(github_release "$GH_REPO" "$TAG")
 if [ "$OS" = "windows" ]; then
   GH_RELEASE_FILENAME="${PROJ_NAME}_${OS}_${ARCH}.zip"
 else
@@ -239,11 +224,11 @@ CHECKSUMS_URL="${GH_ASSETS_URL}/${GH_RELEASE}/${CHECKSUMS_FILENAME}"
 
 execute() {
   TMPDIR=$(mktemp -d)
-  if ! http_download "${TMPDIR}/${GH_RELEASE_FILENAME}" "$DOWNLOAD_URL" "$AUTH_HEADER"; then
+  if ! http_download "${TMPDIR}/${GH_RELEASE_FILENAME}" "$DOWNLOAD_URL"; then
     log_err "Failed to download $DOWNLOAD_URL"
     return 1
   fi
-  if ! http_download "${TMPDIR}/${CHECKSUMS_FILENAME}" "$CHECKSUMS_URL" "$AUTH_HEADER"; then
+  if ! http_download "${TMPDIR}/${CHECKSUMS_FILENAME}" "$CHECKSUMS_URL"; then
     log_err "Failed to download checksums from $CHECKSUMS_URL"
     return 1
   fi

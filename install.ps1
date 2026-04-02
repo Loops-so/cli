@@ -18,11 +18,6 @@ $Arch = switch ($env:PROCESSOR_ARCHITECTURE) {
     default  { throw "Unsupported architecture: $env:PROCESSOR_ARCHITECTURE" }
 }
 
-$AuthHeader = @{}
-if ($env:GITHUB_TOKEN) {
-    $AuthHeader["Authorization"] = "Bearer $env:GITHUB_TOKEN"
-}
-
 function Get-GithubRelease {
     param([string]$Repo, [string]$Version)
     $url = if ($Version -eq "latest") {
@@ -30,7 +25,7 @@ function Get-GithubRelease {
     } else {
         "https://api.github.com/repos/$Repo/releases/tags/$Version"
     }
-    $response = Invoke-RestMethod -Uri $url -Headers $AuthHeader
+    $response = Invoke-RestMethod -Uri $url
     return $response.tag_name
 }
 
@@ -61,8 +56,8 @@ $tmpDir = Join-Path $env:TEMP ([System.IO.Path]::GetRandomFileName())
 New-Item -ItemType Directory -Path $tmpDir | Out-Null
 
 try {
-    Invoke-WebRequest -Uri $downloadUrl -OutFile "$tmpDir\$archiveName" -Headers $AuthHeader
-    Invoke-WebRequest -Uri $checksumsUrl -OutFile "$tmpDir\$checksumsName" -Headers $AuthHeader
+    Invoke-WebRequest -Uri $downloadUrl -OutFile "$tmpDir\$archiveName"
+    Invoke-WebRequest -Uri $checksumsUrl -OutFile "$tmpDir\$checksumsName"
 
     Confirm-Checksum -FilePath "$tmpDir\$archiveName" -ChecksumsPath "$tmpDir\$checksumsName"
 

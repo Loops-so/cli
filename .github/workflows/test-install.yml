@@ -14,8 +14,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           INSTALL_DIR="$HOME/.loops-test"
           sh install.sh latest "$INSTALL_DIR"
@@ -34,8 +32,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - shell: pwsh
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $InstallDir = "$env:TEMP\loops-test"
           .\install.ps1 -InstallDir $InstallDir
