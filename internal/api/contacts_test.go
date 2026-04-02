@@ -474,6 +474,122 @@ func TestCheckContactSuppression(t *testing.T) {
 	}
 }
 
+func TestRemoveContactSuppression(t *testing.T) {
+	tests := []struct {
+		name       string
+		email      string
+		userID     string
+		statusCode int
+		body       string
+		wantAPIErr *APIError
+		wantErrMsg string
+		wantQuery  string
+		wantMsg    string
+	}{
+		{
+			name:       "removes by email",
+			email:      "bob@example.com",
+			statusCode: http.StatusOK,
+			body:       `{"success":true,"message":"Email removed from suppression list.","removalQuota":{"limit":10,"remaining":7}}`,
+			wantQuery:  "email=bob%40example.com",
+			wantMsg:    "Email removed from suppression list.",
+		},
+		{
+			name:       "removes by userId",
+			userID:     "user_123",
+			statusCode: http.StatusOK,
+			body:       `{"success":true,"message":"Email removed from suppression list.","removalQuota":{"limit":10,"remaining":7}}`,
+			wantQuery:  "userId=user_123",
+			wantMsg:    "Email removed from suppression list.",
+		},
+		{
+			name:       "not found",
+			email:      "nobody@example.com",
+			statusCode: http.StatusNotFound,
+			body:       `{"message":"Contact not found."}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusNotFound, Message: "Contact not found."},
+		},
+		{
+			name:       "not suppressed",
+			email:      "bob@example.com",
+			statusCode: http.StatusBadRequest,
+			body:       `{"message":"Contact is not suppressed."}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "Contact is not suppressed."},
+		},
+		{
+			name:       "quota exceeded",
+			email:      "bob@example.com",
+			statusCode: http.StatusBadRequest,
+			body:       `{"message":"Removal quota exceeded."}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "Removal quota exceeded."},
+		},
+		{
+			name:       "unauthorized",
+			email:      "bob@example.com",
+			statusCode: http.StatusUnauthorized,
+			body:       `{"error":"Invalid API key"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusUnauthorized, Message: "Invalid API key"},
+		},
+		{
+			name:       "invalid json",
+			email:      "bob@example.com",
+			statusCode: http.StatusOK,
+			body:       `not json`,
+			wantErrMsg: "failed to decode response",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotQuery string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotQuery = r.URL.RawQuery
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			client := NewClient(server.URL, "test-key", false)
+			result, err := client.RemoveContactSuppression(tt.email, tt.userID)
+
+			if tt.wantQuery != "" && gotQuery != tt.wantQuery {
+				t.Errorf("query = %q, want %q", gotQuery, tt.wantQuery)
+			}
+
+			if tt.wantAPIErr != nil {
+				var apiErr *APIError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("expected *APIError, got %T: %v", err, err)
+				}
+				if apiErr.StatusCode != tt.wantAPIErr.StatusCode {
+					t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, tt.wantAPIErr.StatusCode)
+				}
+				if tt.wantAPIErr.Message != "" && apiErr.Message != tt.wantAPIErr.Message {
+					t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantAPIErr.Message)
+				}
+				return
+			}
+
+			if tt.wantErrMsg != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tt.wantErrMsg)
+				}
+				if !strings.Contains(err.Error(), tt.wantErrMsg) {
+					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.wantErrMsg)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if result.Message != tt.wantMsg {
+				t.Errorf("Message = %q, want %q", result.Message, tt.wantMsg)
+			}
+		})
+	}
+}
+
 func TestFindContacts(t *testing.T) {
 	tests := []struct {
 		name       string
