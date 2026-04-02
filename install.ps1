@@ -12,9 +12,9 @@ $ProjName = "loops_cli"
 $BinName = "loops.exe"
 
 $Arch = switch ($env:PROCESSOR_ARCHITECTURE) {
-    "AMD64"  { "amd64" }
+    "AMD64"  { "x86_64" }
     "ARM64"  { "arm64" }
-    "x86"    { "386" }
+    "x86"    { "i386" }
     default  { throw "Unsupported architecture: $env:PROCESSOR_ARCHITECTURE" }
 }
 
