@@ -126,10 +126,25 @@ func upgradeCommand() string {
 	if isHomebrew() {
 		return "brew upgrade loops"
 	}
+	installDir := binDir()
 	if runtime.GOOS == "windows" {
+		if installDir != "" {
+			return fmt.Sprintf(`irm https://raw.githubusercontent.com/loops-so/cli/main/install.ps1 | iex -Args "-InstallDir '%s'"`, installDir)
+		}
 		return `irm https://raw.githubusercontent.com/loops-so/cli/main/install.ps1 | iex`
 	}
+	if installDir != "" {
+		return fmt.Sprintf(`curl -fsSL --proto '=https' --tlsv1.2 https://cli.loops.so | bash -s -- latest %s`, installDir)
+	}
 	return `curl -fsSL --proto '=https' --tlsv1.2 https://cli.loops.so | bash`
+}
+
+func binDir() string {
+	exe, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	return filepath.Dir(exe)
 }
 
 func isHomebrew() bool {
