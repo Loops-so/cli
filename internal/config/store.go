@@ -22,14 +22,11 @@ type KeyEntry struct {
 }
 
 func configFilePath() (string, error) {
-	if dir := os.Getenv("LOOPS_CONFIG_DIR"); dir != "" {
-		return filepath.Join(dir, "config.yml"), nil
-	}
-	dir, err := os.UserConfigDir()
+	dir, err := ConfigDir()
 	if err != nil {
 		return "", fmt.Errorf("could not determine config directory: %w", err)
 	}
-	return filepath.Join(dir, "loops", "config.yml"), nil
+	return filepath.Join(dir, "config.yml"), nil
 }
 
 func LoadPersistentConfig() (*PersistentConfig, error) {

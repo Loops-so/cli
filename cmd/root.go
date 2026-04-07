@@ -1,11 +1,9 @@
-/*
-Copyright © 2026 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/config"
@@ -52,11 +50,24 @@ func fixHelpFlags(cmd *cobra.Command) {
 	}
 }
 
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	defer func() {
+		if updateCheckDone != nil {
+			select {
+			case <-updateCheckDone:
+			case <-time.After(500 * time.Millisecond):
+			}
+		}
+		if updateCheckCancel != nil {
+			updateCheckCancel()
+		}
+	}()
+
 	fixHelpFlags(rootCmd)
 	err := rootCmd.Execute()
+
+	checkForUpdate(os.Stderr)
+
 	if err != nil {
 		if isJSONOutput() {
 			printJSON(os.Stderr, Result{Success: false, Message: err.Error()})
@@ -68,14 +79,6 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.cli.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
 	rootCmd.PersistentFlags().VarP(&outputFormat, "output", "o", "Output format (text, json)")
 	rootCmd.PersistentFlags().StringVarP(&teamFlag, "team", "t", "", "Team key name to use")
 	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Print API request details before sending")
