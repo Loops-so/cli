@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -706,5 +707,28 @@ func TestFindContacts(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestContactMarshalJSON_PreservesKeyOrder(t *testing.T) {
+	input := `{"id":"cnt_abc123","email":"bob@example.com","firstName":"Bob","lastName":"Smith","source":"api","subscribed":true,"userGroup":"default","userId":"user_123","thisKey":"thisValue","mailingLists":{},"optInStatus":null}`
+
+	var contact Contact
+	if err := json.Unmarshal([]byte(input), &contact); err != nil {
+		t.Fatalf("failed to unmarshal contact: %v", err)
+	}
+
+	out, err := json.Marshal(contact)
+	if err != nil {
+		t.Fatalf("failed to marshal contact: %v", err)
+	}
+
+	var compactIn bytes.Buffer
+	if err := json.Compact(&compactIn, []byte(input)); err != nil {
+		t.Fatalf("failed to compact input json: %v", err)
+	}
+
+	if string(out) != compactIn.String() {
+		t.Fatalf("marshal output order changed:\n got:  %s\n want: %s", string(out), compactIn.String())
 	}
 }

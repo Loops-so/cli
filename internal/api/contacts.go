@@ -45,6 +45,29 @@ func (c *Contact) UnmarshalJSON(data []byte) error {
 }
 
 func (c Contact) MarshalJSON() ([]byte, error) {
+	if len(c.properties) > 0 && len(c.propertyKeys) > 0 {
+		var buf bytes.Buffer
+		buf.WriteByte('{')
+		for i, key := range c.propertyKeys {
+			if i > 0 {
+				buf.WriteByte(',')
+			}
+			keyJSON, err := json.Marshal(key)
+			if err != nil {
+				return nil, err
+			}
+			valJSON, err := json.Marshal(c.properties[key])
+			if err != nil {
+				return nil, err
+			}
+			buf.Write(keyJSON)
+			buf.WriteByte(':')
+			buf.Write(valJSON)
+		}
+		buf.WriteByte('}')
+		return buf.Bytes(), nil
+	}
+
 	if len(c.properties) > 0 {
 		return json.Marshal(c.properties)
 	}
