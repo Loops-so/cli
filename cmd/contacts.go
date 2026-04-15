@@ -150,9 +150,8 @@ var contactsFindCmd = &cobra.Command{
 		row("userId", deref(c.UserID), false)
 		row("optInStatus", deref(c.OptInStatus), false)
 		row("mailingLists", formatMailingLists(c.MailingLists), false)
-		for _, p := range formatCustomPropLines(c.Custom) {
-			parts := strings.SplitN(p, "=", 2)
-			row(parts[0], parts[1], true)
+		for _, k := range sortedKeys(c.Custom) {
+			row(k, formatCustomValue(c.Custom[k]), true)
 		}
 		w.Flush()
 
@@ -308,20 +307,20 @@ func formatMailingLists(m map[string]bool) string {
 	return strings.Join(keys, ", ")
 }
 
-func formatCustomPropLines(m map[string]any) []string {
-	if len(m) == 0 {
-		return nil
-	}
+func sortedKeys(m map[string]any) []string {
 	keys := make([]string, 0, len(m))
 	for k := range m {
 		keys = append(keys, k)
 	}
 	sort.Strings(keys)
-	lines := make([]string, len(keys))
-	for i, k := range keys {
-		lines[i] = fmt.Sprintf("%s=%v", k, m[k])
+	return keys
+}
+
+func formatCustomValue(v any) string {
+	if v == nil {
+		return ""
 	}
-	return lines
+	return fmt.Sprintf("%v", v)
 }
 
 func init() {
