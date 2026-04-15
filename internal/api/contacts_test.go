@@ -600,6 +600,7 @@ func TestFindContacts(t *testing.T) {
 		wantErrMsg string
 		wantCount  int
 		wantQuery  string
+		wantProps  map[string]any
 	}{
 		{
 			name:       "success by email",
@@ -616,6 +617,15 @@ func TestFindContacts(t *testing.T) {
 			body:       `[{"id":"cnt_abc123","email":"bob@example.com","subscribed":true,"mailingLists":{}}]`,
 			wantCount:  1,
 			wantQuery:  "userId=user_123",
+		},
+		{
+			name:       "preserves custom properties",
+			params:     FindContactParams{Email: "bob@example.com"},
+			statusCode: http.StatusOK,
+			body:       `[{"id":"cnt_abc123","email":"bob@example.com","subscribed":true,"mailingLists":{},"thisKey":"thisValue"}]`,
+			wantCount:  1,
+			wantQuery:  "email=bob%40example.com",
+			wantProps:  map[string]any{"thisKey": "thisValue"},
 		},
 		{
 			name:       "empty result",
@@ -686,6 +696,14 @@ func TestFindContacts(t *testing.T) {
 			}
 			if len(contacts) != tt.wantCount {
 				t.Errorf("len(contacts) = %d, want %d", len(contacts), tt.wantCount)
+			}
+			if tt.wantProps != nil {
+				props := contacts[0].Properties()
+				for k, v := range tt.wantProps {
+					if props[k] != v {
+						t.Errorf("contact property %q = %v, want %v", k, props[k], v)
+					}
+				}
 			}
 		})
 	}

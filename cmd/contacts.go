@@ -1,8 +1,13 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"math"
+	"regexp"
 	"strconv"
+	"strings"
+	"unicode"
 
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/cmdutil"
@@ -121,24 +126,74 @@ var contactsFindCmd = &cobra.Command{
 			return nil
 		}
 
-		w := newTableWriter(cmd.OutOrStdout())
-		fmt.Fprintln(w, "USER ID\tEMAIL\tFIRST NAME\tLAST NAME\tSUBSCRIBED\tSOURCE\tUSER GROUP\tOPT-IN STATUS")
-		for _, c := range contacts {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-				deref(c.UserID),
-				c.Email,
-				deref(c.FirstName),
-				deref(c.LastName),
-				strconv.FormatBool(c.Subscribed),
-				c.Source,
-				c.UserGroup,
-				deref(c.OptInStatus),
-			)
+		for i, c := range contacts {
+			props := c.Properties()
+			keys := c.PropertyKeys()
+			labels := make([]string, len(keys))
+			maxLabelWidth := 0
+			for i, key := range keys {
+				label := addSpacesToCamelCase(key, false)
+				labels[i] = label
+				if len(label) > maxLabelWidth {
+					maxLabelWidth = len(label)
+				}
+			}
+			for idx, key := range keys {
+				padding := maxLabelWidth - len(labels[idx]) + 1
+				fmt.Fprintf(cmd.OutOrStdout(), "%s:%*s%s\n", labels[idx], padding, "", formatContactTableValue(props[key]))
+			}
+			if i < len(contacts)-1 {
+				fmt.Fprintln(cmd.OutOrStdout())
+			}
 		}
-		w.Flush()
 
 		return nil
 	},
+}
+
+var camelCaseMatcher = regexp.MustCompile("([A-Z])")
+
+func formatContactTableValue(value any) string {
+	switch v := value.(type) {
+	case nil:
+		return "null"
+	case string:
+		return v
+	case bool:
+		return strconv.FormatBool(v)
+	case float64:
+		if math.Trunc(v) == v {
+			return strconv.FormatInt(int64(v), 10)
+		}
+		return strconv.FormatFloat(v, 'f', -1, 64)
+	default:
+		b, err := json.Marshal(v)
+		if err != nil {
+			return fmt.Sprintf("%v", v)
+		}
+		return string(b)
+	}
+}
+
+func addSpacesToCamelCase(value string, lowerCase bool) string {
+	withSpaces := strings.TrimSpace(camelCaseMatcher.ReplaceAllString(value, " $1"))
+	if withSpaces == "" {
+		return withSpaces
+	}
+
+	runes := []rune(withSpaces)
+	runes[0] = unicode.ToUpper(runes[0])
+	result := string(runes)
+
+	if !lowerCase {
+		return result
+	}
+
+	parts := strings.Fields(result)
+	for i := range parts {
+		parts[i] = strings.ToLower(parts[i])
+	}
+	return strings.Join(parts, " ")
 }
 
 // create

@@ -18,6 +18,127 @@ type Contact struct {
 	UserID       *string         `json:"userId"`
 	MailingLists map[string]bool `json:"mailingLists"`
 	OptInStatus  *string         `json:"optInStatus"`
+	properties   map[string]any
+	propertyKeys []string
+}
+
+func (c *Contact) UnmarshalJSON(data []byte) error {
+	type contactAlias Contact
+	var alias contactAlias
+	if err := json.Unmarshal(data, &alias); err != nil {
+		return err
+	}
+
+	var props map[string]any
+	if err := json.Unmarshal(data, &props); err != nil {
+		return err
+	}
+	keys, err := jsonObjectKeysInOrder(data)
+	if err != nil {
+		return err
+	}
+
+	*c = Contact(alias)
+	c.properties = props
+	c.propertyKeys = keys
+	return nil
+}
+
+func (c Contact) MarshalJSON() ([]byte, error) {
+	if len(c.properties) > 0 {
+		return json.Marshal(c.properties)
+	}
+
+	props := c.Properties()
+	return json.Marshal(props)
+}
+
+func (c Contact) Properties() map[string]any {
+	if len(c.properties) > 0 {
+		clone := make(map[string]any, len(c.properties))
+		for k, v := range c.properties {
+			clone[k] = v
+		}
+		return clone
+	}
+
+	props := map[string]any{
+		"id":           c.ID,
+		"email":        c.Email,
+		"source":       c.Source,
+		"subscribed":   c.Subscribed,
+		"userGroup":    c.UserGroup,
+		"mailingLists": c.MailingLists,
+	}
+	if c.FirstName != nil {
+		props["firstName"] = *c.FirstName
+	} else {
+		props["firstName"] = nil
+	}
+	if c.LastName != nil {
+		props["lastName"] = *c.LastName
+	} else {
+		props["lastName"] = nil
+	}
+	if c.UserID != nil {
+		props["userId"] = *c.UserID
+	} else {
+		props["userId"] = nil
+	}
+	if c.OptInStatus != nil {
+		props["optInStatus"] = *c.OptInStatus
+	} else {
+		props["optInStatus"] = nil
+	}
+
+	return props
+}
+
+func (c Contact) PropertyKeys() []string {
+	if len(c.propertyKeys) > 0 {
+		keys := make([]string, len(c.propertyKeys))
+		copy(keys, c.propertyKeys)
+		return keys
+	}
+	keys := make([]string, 0, len(c.properties))
+	for key := range c.properties {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
+func jsonObjectKeysInOrder(data []byte) ([]string, error) {
+	dec := json.NewDecoder(bytes.NewReader(data))
+	tok, err := dec.Token()
+	if err != nil {
+		return nil, err
+	}
+	delim, ok := tok.(json.Delim)
+	if !ok || delim != '{' {
+		return nil, fmt.Errorf("expected JSON object")
+	}
+
+	keys := make([]string, 0)
+	for dec.More() {
+		keyTok, err := dec.Token()
+		if err != nil {
+			return nil, err
+		}
+		key, ok := keyTok.(string)
+		if !ok {
+			return nil, fmt.Errorf("expected JSON object key")
+		}
+		keys = append(keys, key)
+
+		var ignored json.RawMessage
+		if err := dec.Decode(&ignored); err != nil {
+			return nil, err
+		}
+	}
+	if _, err := dec.Token(); err != nil {
+		return nil, err
+	}
+	return keys, nil
 }
 
 type CreateContactRequest struct {
