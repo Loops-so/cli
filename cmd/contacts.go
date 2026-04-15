@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/cmdutil"
@@ -128,19 +129,29 @@ var contactsFindCmd = &cobra.Command{
 			return nil
 		}
 
+		c := contacts[0]
 		w := newTableWriter(cmd.OutOrStdout())
-		fmt.Fprintln(w, "USER ID\tEMAIL\tFIRST NAME\tLAST NAME\tSUBSCRIBED\tSOURCE\tUSER GROUP\tOPT-IN STATUS")
-		for _, c := range contacts {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-				deref(c.UserID),
-				c.Email,
-				deref(c.FirstName),
-				deref(c.LastName),
-				strconv.FormatBool(c.Subscribed),
-				c.Source,
-				c.UserGroup,
-				deref(c.OptInStatus),
-			)
+		fmt.Fprintln(w, "FIELD\tVALUE\tCUSTOM")
+		row := func(field, value string, custom bool) {
+			marker := ""
+			if custom {
+				marker = "*"
+			}
+			fmt.Fprintf(w, "%s\t%s\t%s\n", field, value, marker)
+		}
+		row("id", c.ID, false)
+		row("email", c.Email, false)
+		row("firstName", deref(c.FirstName), false)
+		row("lastName", deref(c.LastName), false)
+		row("subscribed", strconv.FormatBool(c.Subscribed), false)
+		row("source", c.Source, false)
+		row("userGroup", c.UserGroup, false)
+		row("userId", deref(c.UserID), false)
+		row("optInStatus", deref(c.OptInStatus), false)
+		row("mailingLists", formatMailingLists(c.MailingLists), false)
+		for _, p := range formatCustomPropLines(c.Custom) {
+			parts := strings.SplitN(p, "=", 2)
+			row(parts[0], parts[1], true)
 		}
 		w.Flush()
 

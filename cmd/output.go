@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"sort"
+	"strings"
 	"text/tabwriter"
 )
 
@@ -46,4 +48,34 @@ func deref(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+func formatMailingLists(m map[string]bool) string {
+	if len(m) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(m))
+	for k, v := range m {
+		if v {
+			keys = append(keys, k)
+		}
+	}
+	sort.Strings(keys)
+	return strings.Join(keys, ", ")
+}
+
+func formatCustomPropLines(m map[string]any) []string {
+	if len(m) == 0 {
+		return nil
+	}
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	lines := make([]string, len(keys))
+	for i, k := range keys {
+		lines[i] = fmt.Sprintf("%s=%v", k, m[k])
+	}
+	return lines
 }

@@ -8,7 +8,7 @@ import (
 )
 
 func TestRunContactsFind(t *testing.T) {
-	body := `[{"id":"cnt_abc123","email":"bob@example.com","firstName":"Bob","lastName":"Smith","source":"api","subscribed":true,"userGroup":"default","userId":"user_123","mailingLists":{},"optInStatus":"accepted"}]`
+	body := `[{"id":"cnt_abc123","email":"bob@example.com","firstName":"Bob","lastName":"Smith","source":"api","subscribed":true,"userGroup":"default","userId":"user_123","mailingLists":{},"optInStatus":"accepted","company":"Loops","plan":"pro"}]`
 
 	assertContact := func(t *testing.T, got api.Contact) {
 		t.Helper()
@@ -22,6 +22,9 @@ func TestRunContactsFind(t *testing.T) {
 			deref(got.UserID) != "user_123" ||
 			deref(got.OptInStatus) != "accepted" {
 			t.Errorf("unexpected contact: %+v", got)
+		}
+		if got.Custom["company"] != "Loops" || got.Custom["plan"] != "pro" {
+			t.Errorf("unexpected custom properties: %v", got.Custom)
 		}
 	}
 
