@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/cmdutil"
@@ -27,6 +28,7 @@ func addContactFieldFlags(cmd *cobra.Command) {
 	cmd.Flags().StringP("subscribed", "s", "", `Subscribed status ("true" or "false")`)
 	cmd.Flags().String("user-group", "", "User group")
 	cmd.Flags().StringArray("list", nil, "Mailing list subscription as id=true|false (repeatable)")
+	cmd.Flags().StringArray("prop", nil, "Contact property as KEY=value (repeatable)")
 	cmd.Flags().String("contact-props", "", "Path to a JSON file of contact properties")
 }
 
@@ -69,6 +71,17 @@ func contactFieldParamsFromCmd(cmd *cobra.Command) (contactFieldParams, error) {
 			return params, err
 		}
 		params.ContactProperties = contactProps
+	}
+	propPairs, _ := cmd.Flags().GetStringArray("prop")
+	for _, pair := range propPairs {
+		idx := strings.IndexByte(pair, '=')
+		if idx < 0 {
+			return params, fmt.Errorf("--prop %q: expected KEY=value", pair)
+		}
+		if params.ContactProperties == nil {
+			params.ContactProperties = make(map[string]any)
+		}
+		params.ContactProperties[pair[:idx]] = pair[idx+1:]
 	}
 
 	return params, nil
