@@ -27,6 +27,7 @@ func addContactFieldFlags(cmd *cobra.Command) {
 	cmd.Flags().StringP("subscribed", "s", "", `Subscribed status ("true" or "false")`)
 	cmd.Flags().String("user-group", "", "User group")
 	cmd.Flags().StringArray("list", nil, "Mailing list subscription as id=true|false (repeatable)")
+	cmd.Flags().StringArray("prop", nil, "Contact property as KEY=value (repeatable)")
 	cmd.Flags().String("contact-props", "", "Path to a JSON file of contact properties")
 }
 
@@ -70,6 +71,12 @@ func contactFieldParamsFromCmd(cmd *cobra.Command) (contactFieldParams, error) {
 		}
 		params.ContactProperties = contactProps
 	}
+	propPairs, _ := cmd.Flags().GetStringArray("prop")
+	props, err := cmdutil.ParseKeyValuePairs("prop", propPairs, params.ContactProperties)
+	if err != nil {
+		return params, err
+	}
+	params.ContactProperties = props
 
 	return params, nil
 }

@@ -110,9 +110,49 @@ func TestContactFieldParamsFromCmd(t *testing.T) {
 		}
 	})
 
+	t.Run("valid --prop", func(t *testing.T) {
+		cmd := newFieldCmd(t)
+		cmd.Flags().Set("prop", "plan=pro")
+		cmd.Flags().Set("prop", "score=42")
+		params, err := contactFieldParamsFromCmd(cmd)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if params.ContactProperties["plan"] != "pro" || params.ContactProperties["score"] != "42" {
+			t.Errorf("unexpected contact properties: %v", params.ContactProperties)
+		}
+	})
+
+	t.Run("prop overrides contact-props file", func(t *testing.T) {
+		f := filepath.Join(t.TempDir(), "props.json")
+		os.WriteFile(f, []byte(`{"plan":"starter","region":"us"}`), 0644)
+		cmd := newFieldCmd(t)
+		cmd.Flags().Set("contact-props", f)
+		cmd.Flags().Set("prop", "plan=pro")
+		params, err := contactFieldParamsFromCmd(cmd)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if params.ContactProperties["plan"] != "pro" {
+			t.Errorf("expected plan=pro, got %v", params.ContactProperties["plan"])
+		}
+		if params.ContactProperties["region"] != "us" {
+			t.Errorf("expected region=us, got %v", params.ContactProperties["region"])
+		}
+	})
+
 	t.Run("nonexistent --contact-props returns error", func(t *testing.T) {
 		cmd := newFieldCmd(t)
 		cmd.Flags().Set("contact-props", "/nonexistent/path.json")
+		_, err := contactFieldParamsFromCmd(cmd)
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+	})
+
+	t.Run("invalid --prop returns error", func(t *testing.T) {
+		cmd := newFieldCmd(t)
+		cmd.Flags().Set("prop", "missingequals")
 		_, err := contactFieldParamsFromCmd(cmd)
 		if err == nil {
 			t.Fatal("expected error, got nil")
