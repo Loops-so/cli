@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"strconv"
-	"strings"
 
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/cmdutil"
@@ -73,16 +72,11 @@ func contactFieldParamsFromCmd(cmd *cobra.Command) (contactFieldParams, error) {
 		params.ContactProperties = contactProps
 	}
 	propPairs, _ := cmd.Flags().GetStringArray("prop")
-	for _, pair := range propPairs {
-		idx := strings.IndexByte(pair, '=')
-		if idx < 0 {
-			return params, fmt.Errorf("--prop %q: expected KEY=value", pair)
-		}
-		if params.ContactProperties == nil {
-			params.ContactProperties = make(map[string]any)
-		}
-		params.ContactProperties[pair[:idx]] = pair[idx+1:]
+	props, err := cmdutil.ParseKeyValuePairs("prop", propPairs, params.ContactProperties)
+	if err != nil {
+		return params, err
 	}
+	params.ContactProperties = props
 
 	return params, nil
 }

@@ -23,17 +23,7 @@ func parseDataVars(vars []string, jsonFile string) (map[string]any, error) {
 			return nil, err
 		}
 	}
-	for _, pair := range vars {
-		idx := strings.IndexByte(pair, '=')
-		if idx < 0 {
-			return nil, fmt.Errorf("--var %q: expected KEY=value", pair)
-		}
-		if m == nil {
-			m = make(map[string]any)
-		}
-		m[pair[:idx]] = pair[idx+1:]
-	}
-	return m, nil
+	return cmdutil.ParseKeyValuePairs("var", vars, m)
 }
 
 func attachmentFromPath(path string) (api.Attachment, error) {
