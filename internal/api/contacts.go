@@ -18,6 +18,62 @@ type Contact struct {
 	UserID       *string         `json:"userId"`
 	MailingLists map[string]bool `json:"mailingLists"`
 	OptInStatus  *string         `json:"optInStatus"`
+	Custom       map[string]any  `json:"-"`
+}
+
+var knownContactFields = map[string]bool{
+	"id": true, "email": true, "firstName": true, "lastName": true,
+	"source": true, "subscribed": true, "userGroup": true, "userId": true,
+	"mailingLists": true, "optInStatus": true,
+}
+
+func (c *Contact) UnmarshalJSON(data []byte) error {
+	type Alias Contact
+	if err := json.Unmarshal(data, (*Alias)(c)); err != nil {
+		return err
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	for k, v := range raw {
+		if knownContactFields[k] {
+			continue
+		}
+		if c.Custom == nil {
+			c.Custom = make(map[string]any)
+		}
+		var val any
+		if err := json.Unmarshal(v, &val); err != nil {
+			c.Custom[k] = string(v)
+		} else {
+			c.Custom[k] = val
+		}
+	}
+	return nil
+}
+
+func (c Contact) MarshalJSON() ([]byte, error) {
+	type Alias Contact
+	b, err := json.Marshal(Alias(c))
+	if err != nil {
+		return nil, err
+	}
+	if len(c.Custom) == 0 {
+		return b, nil
+	}
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(b, &m); err != nil {
+		return nil, err
+	}
+	for k, v := range c.Custom {
+		raw, err := json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+		m[k] = raw
+	}
+	return json.Marshal(m)
 }
 
 type CreateContactRequest struct {
