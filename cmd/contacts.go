@@ -2,7 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/cmdutil"
@@ -128,19 +130,28 @@ var contactsFindCmd = &cobra.Command{
 			return nil
 		}
 
+		c := contacts[0]
 		w := newTableWriter(cmd.OutOrStdout())
-		fmt.Fprintln(w, "USER ID\tEMAIL\tFIRST NAME\tLAST NAME\tSUBSCRIBED\tSOURCE\tUSER GROUP\tOPT-IN STATUS")
-		for _, c := range contacts {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-				deref(c.UserID),
-				c.Email,
-				deref(c.FirstName),
-				deref(c.LastName),
-				strconv.FormatBool(c.Subscribed),
-				c.Source,
-				c.UserGroup,
-				deref(c.OptInStatus),
-			)
+		fmt.Fprintln(w, "FIELD\tVALUE\tCUSTOM")
+		row := func(field, value string, custom bool) {
+			marker := ""
+			if custom {
+				marker = "*"
+			}
+			fmt.Fprintf(w, "%s\t%s\t%s\n", field, value, marker)
+		}
+		row("id", c.ID, false)
+		row("email", c.Email, false)
+		row("firstName", deref(c.FirstName), false)
+		row("lastName", deref(c.LastName), false)
+		row("subscribed", strconv.FormatBool(c.Subscribed), false)
+		row("source", c.Source, false)
+		row("userGroup", c.UserGroup, false)
+		row("userId", deref(c.UserID), false)
+		row("optInStatus", deref(c.OptInStatus), false)
+		row("mailingLists", formatMailingLists(c.MailingLists), false)
+		for _, k := range sortedKeys(c.Custom) {
+			row(k, formatCustomValue(c.Custom[k]), true)
 		}
 		w.Flush()
 
@@ -280,6 +291,36 @@ var contactsDeleteCmd = &cobra.Command{
 		fmt.Fprintln(cmd.OutOrStdout(), "Deleted.")
 		return nil
 	},
+}
+
+func formatMailingLists(m map[string]bool) string {
+	if len(m) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(m))
+	for k, v := range m {
+		if v {
+			keys = append(keys, k)
+		}
+	}
+	sort.Strings(keys)
+	return strings.Join(keys, ", ")
+}
+
+func sortedKeys(m map[string]any) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func formatCustomValue(v any) string {
+	if v == nil {
+		return ""
+	}
+	return fmt.Sprintf("%v", v)
 }
 
 func init() {
