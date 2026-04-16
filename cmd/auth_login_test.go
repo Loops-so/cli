@@ -38,6 +38,7 @@ func TestRunAuthLogin(t *testing.T) {
 	})
 
 	t.Run("skip-verify saves key without calling api", func(t *testing.T) {
+		mockKeyring(t)
 		result, err := runAuthLogin("test-key", "acme", true)
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
