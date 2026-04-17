@@ -37,6 +37,12 @@ To install a specific version or to a custom path, append `-s -- <version> <path
 irm https://raw.githubusercontent.com/Loops-so/cli/main/install.ps1 | iex
 ```
 
+### Go install
+
+```bash
+go install github.com/loops-so/cli/cmd/loops@latest
+```
+
 ## Auth
 
 The CLI requires a Loops API key. Get one from [Settings > API](https://app.loops.so/settings?page=api).
