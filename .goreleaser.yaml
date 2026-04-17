@@ -10,7 +10,8 @@ before:
     - go mod tidy
 
 builds:
-  - binary: loops
+  - main: ./cmd/loops
+    binary: loops
     env:
       - CGO_ENABLED=0
     goos:

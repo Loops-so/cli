@@ -126,6 +126,9 @@ func upgradeCommand() string {
 	if isHomebrew() {
 		return "brew upgrade loops"
 	}
+	if isGoInstall() {
+		return "go install github.com/loops-so/cli/cmd/loops@latest"
+	}
 	installDir := binDir()
 	if runtime.GOOS == "windows" {
 		if installDir != "" {
@@ -145,6 +148,25 @@ func binDir() string {
 		return ""
 	}
 	return filepath.Dir(exe)
+}
+
+func isGoInstall() bool {
+	dir := binDir()
+	if dir == "" {
+		return false
+	}
+	if gobin := os.Getenv("GOBIN"); gobin != "" && dir == gobin {
+		return true
+	}
+	gopath := os.Getenv("GOPATH")
+	if gopath == "" {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return false
+		}
+		gopath = filepath.Join(home, "go")
+	}
+	return dir == filepath.Join(gopath, "bin")
 }
 
 func isHomebrew() bool {

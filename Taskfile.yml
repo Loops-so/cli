@@ -22,7 +22,7 @@ tasks:
     deps:
       - deps
     cmds:
-      - go build -o dist/loops
+      - go build -o dist/loops ./cmd/loops
 
   test:
     desc: run tests
