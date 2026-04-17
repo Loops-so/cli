@@ -53,8 +53,9 @@ tasks:
 
   release:local:
     desc: build with goreleaser
+    dotenv: [.env.macos-signing]
     cmds:
-      - goreleaser release --snapshot --clean
+      - goreleaser release --snapshot --single-target --clean
 
   release:check:
     cmds:
