@@ -40,6 +40,115 @@ const listCampaignsResponse = `{
 	]
 }`
 
+func TestGetCampaign(t *testing.T) {
+	body := `{
+		"success": true,
+		"campaignId": "cmp_abc123",
+		"emailMessageId": "em_abc123",
+		"name": "Spring Launch",
+		"status": "Draft",
+		"createdAt": "2026-04-01T10:00:00Z",
+		"updatedAt": "2026-04-02T10:00:00Z"
+	}`
+
+	tests := []struct {
+		name       string
+		id         string
+		statusCode int
+		body       string
+		wantAPIErr *APIError
+		wantErrMsg string
+		wantID     string
+	}{
+		{
+			name:       "success",
+			id:         "cmp_abc123",
+			statusCode: http.StatusOK,
+			body:       body,
+			wantID:     "cmp_abc123",
+		},
+		{
+			name:       "not found",
+			id:         "cmp_missing",
+			statusCode: http.StatusNotFound,
+			body:       `{"success":false,"message":"Campaign not found"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusNotFound, Message: "Campaign not found"},
+		},
+		{
+			name:       "invalid id",
+			id:         "bad",
+			statusCode: http.StatusBadRequest,
+			body:       `{"success":false,"message":"Invalid campaignId"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "Invalid campaignId"},
+		},
+		{
+			name:       "invalid json",
+			id:         "cmp_abc123",
+			statusCode: http.StatusOK,
+			body:       `not json`,
+			wantErrMsg: "failed to decode response",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var gotPath string
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				gotPath = r.URL.Path
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			client := NewClient(server.URL, "test-key", false)
+			result, err := client.GetCampaign(tt.id)
+
+			if tt.wantAPIErr != nil {
+				var apiErr *APIError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("expected *APIError, got %T: %v", err, err)
+				}
+				if apiErr.StatusCode != tt.wantAPIErr.StatusCode {
+					t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, tt.wantAPIErr.StatusCode)
+				}
+				if apiErr.Message != tt.wantAPIErr.Message {
+					t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantAPIErr.Message)
+				}
+				return
+			}
+
+			if tt.wantErrMsg != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tt.wantErrMsg)
+				}
+				if !strings.Contains(err.Error(), tt.wantErrMsg) {
+					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.wantErrMsg)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if want := "/campaigns/" + tt.id; gotPath != want {
+				t.Errorf("path = %q, want %q", gotPath, want)
+			}
+			if result.CampaignID != tt.wantID {
+				t.Errorf("CampaignID = %q, want %q", result.CampaignID, tt.wantID)
+			}
+			if result.EmailMessageID == nil || *result.EmailMessageID != "em_abc123" {
+				t.Errorf("EmailMessageID = %v, want em_abc123", result.EmailMessageID)
+			}
+			if result.Name != "Spring Launch" {
+				t.Errorf("Name = %q, want Spring Launch", result.Name)
+			}
+			if result.Status != "Draft" {
+				t.Errorf("Status = %q, want Draft", result.Status)
+			}
+		})
+	}
+}
+
 func TestListCampaigns(t *testing.T) {
 	tests := []struct {
 		name       string

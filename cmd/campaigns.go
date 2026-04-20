@@ -8,6 +8,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func runCampaignsGet(cfg *config.Config, id string) (*api.Campaign, error) {
+	return newAPIClient(cfg).GetCampaign(id)
+}
+
 func runCampaignsList(cfg *config.Config, params api.PaginationParams) ([]api.Campaign, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
@@ -71,8 +75,45 @@ var campaignsListCmd = &cobra.Command{
 	},
 }
 
+var campaignsGetCmd = &cobra.Command{
+	Use:   "get <id>",
+	Short: "Get a campaign",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		c, err := runCampaignsGet(cfg, args[0])
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), c)
+		}
+
+		w := newTableWriter(cmd.OutOrStdout())
+		fmt.Fprintln(w, "FIELD\tVALUE")
+		row := func(field, value string) {
+			fmt.Fprintf(w, "%s\t%s\n", field, value)
+		}
+		row("campaignId", c.CampaignID)
+		row("emailMessageId", deref(c.EmailMessageID))
+		row("name", c.Name)
+		row("status", c.Status)
+		row("createdAt", c.CreatedAt)
+		row("updatedAt", c.UpdatedAt)
+		w.Flush()
+
+		return nil
+	},
+}
+
 func init() {
 	addPaginationFlags(campaignsListCmd)
 	campaignsCmd.AddCommand(campaignsListCmd)
+	campaignsCmd.AddCommand(campaignsGetCmd)
 	rootCmd.AddCommand(campaignsCmd)
 }
