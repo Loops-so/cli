@@ -18,7 +18,7 @@ func TestGetEmailMessage(t *testing.T) {
 		"fromName": "Acme",
 		"fromEmail": "hello",
 		"replyToEmail": "support@acme.com",
-		"lmx": "# Hi\n\nBody text.",
+		"lmx": "<Paragraph>Hi</Paragraph><Paragraph>Body text.</Paragraph>",
 		"contentRevisionId": "rev_1",
 		"updatedAt": "2026-04-20T10:00:00Z"
 	}`
@@ -114,7 +114,7 @@ func TestGetEmailMessage(t *testing.T) {
 			if result.Subject != "Hello" {
 				t.Errorf("Subject = %q, want Hello", result.Subject)
 			}
-			if result.LMX != "# Hi\n\nBody text." {
+			if result.LMX != "<Paragraph>Hi</Paragraph><Paragraph>Body text.</Paragraph>" {
 				t.Errorf("LMX = %q", result.LMX)
 			}
 			if result.ContentRevisionID == nil || *result.ContentRevisionID != "rev_1" {

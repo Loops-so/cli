@@ -15,7 +15,7 @@ func TestRunEmailMessagesGet(t *testing.T) {
 		"fromName": "Acme",
 		"fromEmail": "hello",
 		"replyToEmail": "support@acme.com",
-		"lmx": "# Hi",
+		"lmx": "<Paragraph>Hi</Paragraph>",
 		"contentRevisionId": "rev_1",
 		"updatedAt": "2026-04-20T10:00:00Z"
 	}`

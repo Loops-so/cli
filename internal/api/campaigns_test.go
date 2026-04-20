@@ -57,7 +57,7 @@ const createCampaignResponse = `{
 		"fromName": "Acme",
 		"fromEmail": "hello",
 		"replyToEmail": "support@acme.com",
-		"lmx": "<Text>Hi</Text>",
+		"lmx": "<Paragraph>Hi</Paragraph>",
 		"contentRevisionId": "rev_1",
 		"updatedAt": "2026-04-20T10:00:00Z"
 	},
@@ -168,7 +168,7 @@ func TestCreateCampaign_RequestBody(t *testing.T) {
 				Name: "Spring",
 				EmailMessage: &CampaignEmailMessageFields{
 					Subject: "Hello",
-					LMX:     "<Text>Hi</Text>",
+					LMX:     "<Paragraph>Hi</Paragraph>",
 				},
 			},
 			wantName:  "Spring",
@@ -204,7 +204,7 @@ func TestCreateCampaign_RequestBody(t *testing.T) {
 				if em["subject"] != "Hello" {
 					t.Errorf("emailMessage.subject = %v, want Hello", em["subject"])
 				}
-				if em["lmx"] != "<Text>Hi</Text>" {
+				if em["lmx"] != "<Paragraph>Hi</Paragraph>" {
 					t.Errorf("emailMessage.lmx = %v", em["lmx"])
 				}
 			}
