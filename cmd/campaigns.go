@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/loops-so/cli/internal/api"
@@ -91,31 +90,20 @@ var campaignsCreateCmd = &cobra.Command{
 	Short: "Create a draft campaign",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name, _ := cmd.Flags().GetString("name")
-		subject, _ := cmd.Flags().GetString("subject")
-		previewText, _ := cmd.Flags().GetString("preview-text")
-		fromName, _ := cmd.Flags().GetString("from-name")
-		fromEmail, _ := cmd.Flags().GetString("from-email")
-		replyTo, _ := cmd.Flags().GetString("reply-to")
-		lmx, _ := cmd.Flags().GetString("lmx")
-		lmxFile, _ := cmd.Flags().GetString("lmx-file")
-
-		if lmxFile != "" {
-			data, err := os.ReadFile(lmxFile)
-			if err != nil {
-				return fmt.Errorf("read --lmx-file: %w", err)
-			}
-			lmx = string(data)
+		params, err := emailMessageFieldParamsFromCmd(cmd)
+		if err != nil {
+			return err
 		}
 
 		req := api.CreateCampaignRequest{Name: name}
-		if subject != "" || previewText != "" || fromName != "" || fromEmail != "" || replyTo != "" || lmx != "" {
-			req.EmailMessage = &api.CampaignEmailMessageFields{
-				Subject:      subject,
-				PreviewText:  previewText,
-				FromName:     fromName,
-				FromEmail:    fromEmailUsername(fromEmail),
-				ReplyToEmail: replyTo,
-				LMX:          lmx,
+		if len(params.Set) > 0 {
+			req.EmailMessage = &api.EmailMessageFields{
+				Subject:      params.Subject,
+				PreviewText:  params.PreviewText,
+				FromName:     params.FromName,
+				FromEmail:    params.FromEmail,
+				ReplyToEmail: params.ReplyToEmail,
+				LMX:          params.LMX,
 			}
 		}
 
@@ -197,15 +185,8 @@ func init() {
 	campaignsCmd.AddCommand(campaignsGetCmd)
 
 	campaignsCreateCmd.Flags().StringP("name", "n", "", "Campaign name (required)")
-	campaignsCreateCmd.Flags().String("subject", "", "Email subject")
-	campaignsCreateCmd.Flags().String("preview-text", "", "Email preview text")
-	campaignsCreateCmd.Flags().String("from-name", "", "Sender name")
-	campaignsCreateCmd.Flags().String("from-email", "", "Username only: a@example.com -> a")
-	campaignsCreateCmd.Flags().String("reply-to", "", "Reply-to email address")
-	campaignsCreateCmd.Flags().String("lmx", "", "LMX markup (inline)")
-	campaignsCreateCmd.Flags().String("lmx-file", "", "Path to a file containing LMX markup")
+	addEmailMessageFieldFlags(campaignsCreateCmd)
 	campaignsCreateCmd.MarkFlagRequired("name")
-	campaignsCreateCmd.MarkFlagsMutuallyExclusive("lmx", "lmx-file")
 	campaignsCmd.AddCommand(campaignsCreateCmd)
 
 	rootCmd.AddCommand(campaignsCmd)

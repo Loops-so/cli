@@ -166,7 +166,7 @@ func TestCreateCampaign_RequestBody(t *testing.T) {
 			name: "with email message",
 			req: CreateCampaignRequest{
 				Name: "Spring",
-				EmailMessage: &CampaignEmailMessageFields{
+				EmailMessage: &EmailMessageFields{
 					Subject: "Hello",
 					LMX:     "<Paragraph>Hi</Paragraph>",
 				},

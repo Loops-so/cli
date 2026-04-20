@@ -25,7 +25,7 @@ type LmxWarning struct {
 	Path     string `json:"path,omitempty"`
 }
 
-type CampaignEmailMessageFields struct {
+type EmailMessageFields struct {
 	Subject      string `json:"subject,omitempty"`
 	PreviewText  string `json:"previewText,omitempty"`
 	FromName     string `json:"fromName,omitempty"`
@@ -35,8 +35,8 @@ type CampaignEmailMessageFields struct {
 }
 
 type CreateCampaignRequest struct {
-	Name         string                      `json:"name"`
-	EmailMessage *CampaignEmailMessageFields `json:"emailMessage,omitempty"`
+	Name         string              `json:"name"`
+	EmailMessage *EmailMessageFields `json:"emailMessage,omitempty"`
 }
 
 type CampaignCreateResponse struct {

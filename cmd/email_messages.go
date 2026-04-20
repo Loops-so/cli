@@ -2,14 +2,95 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
+// emailMessageFieldParams holds the six content fields shared by
+// `campaigns create` and `email-messages update`. Set records which fields the
+// user explicitly provided (keyed by JSON field name) so partial updates can
+// send only those fields.
+type emailMessageFieldParams struct {
+	Subject      string
+	PreviewText  string
+	FromName     string
+	FromEmail    string
+	ReplyToEmail string
+	LMX          string
+	Set          map[string]bool
+}
+
+func addEmailMessageFieldFlags(cmd *cobra.Command) {
+	cmd.Flags().String("subject", "", "Email subject")
+	cmd.Flags().String("preview-text", "", "Email preview text")
+	cmd.Flags().String("from-name", "", "Sender name")
+	cmd.Flags().String("from-email", "", "Username only: a@example.com -> a")
+	cmd.Flags().String("reply-to", "", "Reply-to email address")
+	cmd.Flags().String("lmx", "", "LMX markup (inline)")
+	cmd.Flags().String("lmx-file", "", "Path to a file containing LMX markup")
+	cmd.MarkFlagsMutuallyExclusive("lmx", "lmx-file")
+}
+
+func emailMessageFieldParamsFromCmd(cmd *cobra.Command) (emailMessageFieldParams, error) {
+	p := emailMessageFieldParams{Set: map[string]bool{}}
+
+	if cmd.Flags().Changed("subject") {
+		p.Subject, _ = cmd.Flags().GetString("subject")
+		p.Set["subject"] = true
+	}
+	if cmd.Flags().Changed("preview-text") {
+		p.PreviewText, _ = cmd.Flags().GetString("preview-text")
+		p.Set["previewText"] = true
+	}
+	if cmd.Flags().Changed("from-name") {
+		p.FromName, _ = cmd.Flags().GetString("from-name")
+		p.Set["fromName"] = true
+	}
+	if cmd.Flags().Changed("from-email") {
+		v, _ := cmd.Flags().GetString("from-email")
+		p.FromEmail = fromEmailUsername(v)
+		p.Set["fromEmail"] = true
+	}
+	if cmd.Flags().Changed("reply-to") {
+		p.ReplyToEmail, _ = cmd.Flags().GetString("reply-to")
+		p.Set["replyToEmail"] = true
+	}
+	if cmd.Flags().Changed("lmx") {
+		p.LMX, _ = cmd.Flags().GetString("lmx")
+		p.Set["lmx"] = true
+	}
+	if cmd.Flags().Changed("lmx-file") {
+		path, _ := cmd.Flags().GetString("lmx-file")
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return p, fmt.Errorf("read --lmx-file: %w", err)
+		}
+		p.LMX = string(data)
+		p.Set["lmx"] = true
+	}
+	return p, nil
+}
+
 func runEmailMessagesGet(cfg *config.Config, id string) (*api.EmailMessage, error) {
 	return newAPIClient(cfg).GetEmailMessage(id)
+}
+
+func runEmailMessagesUpdate(cfg *config.Config, id string, req api.UpdateEmailMessageRequest) (*api.EmailMessage, error) {
+	return newAPIClient(cfg).UpdateEmailMessage(id, req)
+}
+
+func resolveExpectedRevisionID(cfg *config.Config, id, supplied string) (string, error) {
+	if supplied != "" {
+		return supplied, nil
+	}
+	msg, err := newAPIClient(cfg).GetEmailMessage(id)
+	if err != nil {
+		return "", fmt.Errorf("fetch current revision: %w", err)
+	}
+	return deref(msg.ContentRevisionID), nil
 }
 
 var emailMessagesCmd = &cobra.Command{
@@ -36,31 +117,107 @@ var emailMessagesGetCmd = &cobra.Command{
 			return printJSON(cmd.OutOrStdout(), msg)
 		}
 
-		w := newTableWriter(cmd.OutOrStdout())
-		fmt.Fprintln(w, "FIELD\tVALUE")
-		row := func(field, value string) {
-			fmt.Fprintf(w, "%s\t%s\n", field, value)
-		}
-		row("emailMessageId", msg.EmailMessageID)
-		row("campaignId", deref(msg.CampaignID))
-		row("subject", msg.Subject)
-		row("previewText", msg.PreviewText)
-		row("fromName", msg.FromName)
-		row("fromEmail", msg.FromEmail)
-		row("replyToEmail", msg.ReplyToEmail)
-		row("contentRevisionId", deref(msg.ContentRevisionID))
-		row("updatedAt", msg.UpdatedAt)
-		w.Flush()
-
-		fmt.Fprintln(cmd.OutOrStdout())
-		fmt.Fprintln(cmd.OutOrStdout(), "LMX:")
-		fmt.Fprintln(cmd.OutOrStdout(), msg.LMX)
-
+		printEmailMessage(cmd, msg)
 		return nil
 	},
 }
 
+var emailMessagesUpdateCmd = &cobra.Command{
+	Use:   "update <id>",
+	Short: "Update a draft email message",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		params, err := emailMessageFieldParamsFromCmd(cmd)
+		if err != nil {
+			return err
+		}
+
+		suppliedRevisionID, _ := cmd.Flags().GetString("expected-revision-id")
+
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		expectedRevisionID, err := resolveExpectedRevisionID(cfg, args[0], suppliedRevisionID)
+		if err != nil {
+			return err
+		}
+
+		req := api.UpdateEmailMessageRequest{
+			EmailMessageFields: api.EmailMessageFields{
+				Subject:      params.Subject,
+				PreviewText:  params.PreviewText,
+				FromName:     params.FromName,
+				FromEmail:    params.FromEmail,
+				ReplyToEmail: params.ReplyToEmail,
+				LMX:          params.LMX,
+			},
+			Set:                params.Set,
+			ExpectedRevisionID: expectedRevisionID,
+		}
+
+		msg, err := runEmailMessagesUpdate(cfg, args[0], req)
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), msg)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Updated. (emailMessageId: %s, contentRevisionId: %s)\n", msg.EmailMessageID, deref(msg.ContentRevisionID))
+		fmt.Fprintln(cmd.OutOrStdout())
+		printEmailMessage(cmd, msg)
+		printLmxWarnings(cmd, msg.Warnings)
+		return nil
+	},
+}
+
+func printEmailMessage(cmd *cobra.Command, msg *api.EmailMessage) {
+	w := newTableWriter(cmd.OutOrStdout())
+	fmt.Fprintln(w, "FIELD\tVALUE")
+	row := func(field, value string) {
+		fmt.Fprintf(w, "%s\t%s\n", field, value)
+	}
+	row("emailMessageId", msg.EmailMessageID)
+	row("campaignId", deref(msg.CampaignID))
+	row("subject", msg.Subject)
+	row("previewText", msg.PreviewText)
+	row("fromName", msg.FromName)
+	row("fromEmail", msg.FromEmail)
+	row("replyToEmail", msg.ReplyToEmail)
+	row("contentRevisionId", deref(msg.ContentRevisionID))
+	row("updatedAt", msg.UpdatedAt)
+	w.Flush()
+
+	fmt.Fprintln(cmd.OutOrStdout())
+	fmt.Fprintln(cmd.OutOrStdout(), "LMX:")
+	fmt.Fprintln(cmd.OutOrStdout(), msg.LMX)
+}
+
+func printLmxWarnings(cmd *cobra.Command, warnings []api.LmxWarning) {
+	if len(warnings) == 0 {
+		return
+	}
+	fmt.Fprintln(cmd.OutOrStdout())
+	fmt.Fprintln(cmd.OutOrStdout(), "Warnings:")
+	for _, warn := range warnings {
+		if warn.Path != "" {
+			fmt.Fprintf(cmd.OutOrStdout(), "  [%s] %s (%s)\n", warn.Rule, warn.Message, warn.Path)
+		} else {
+			fmt.Fprintf(cmd.OutOrStdout(), "  [%s] %s\n", warn.Rule, warn.Message)
+		}
+	}
+}
+
 func init() {
 	emailMessagesCmd.AddCommand(emailMessagesGetCmd)
+
+	addEmailMessageFieldFlags(emailMessagesUpdateCmd)
+	emailMessagesUpdateCmd.Flags().String("expected-revision-id", "", "Last-seen contentRevisionId. If omitted, the CLI fetches the current revision before posting.")
+	emailMessagesUpdateCmd.MarkFlagsOneRequired("subject", "preview-text", "from-name", "from-email", "reply-to", "lmx", "lmx-file")
+	emailMessagesCmd.AddCommand(emailMessagesUpdateCmd)
+
 	rootCmd.AddCommand(emailMessagesCmd)
 }
