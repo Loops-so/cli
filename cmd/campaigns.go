@@ -3,11 +3,17 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
+
+func fromEmailUsername(s string) string {
+	before, _, _ := strings.Cut(s, "@")
+	return before
+}
 
 func runCampaignsGet(cfg *config.Config, id string) (*api.Campaign, error) {
 	return newAPIClient(cfg).GetCampaign(id)
@@ -107,7 +113,7 @@ var campaignsCreateCmd = &cobra.Command{
 				Subject:      subject,
 				PreviewText:  previewText,
 				FromName:     fromName,
-				FromEmail:    fromEmail,
+				FromEmail:    fromEmailUsername(fromEmail),
 				ReplyToEmail: replyTo,
 				LMX:          lmx,
 			}
@@ -194,7 +200,7 @@ func init() {
 	campaignsCreateCmd.Flags().String("subject", "", "Email subject")
 	campaignsCreateCmd.Flags().String("preview-text", "", "Email preview text")
 	campaignsCreateCmd.Flags().String("from-name", "", "Sender name")
-	campaignsCreateCmd.Flags().String("from-email", "", "Sender email username (no @ or domain)")
+	campaignsCreateCmd.Flags().String("from-email", "", "Username only: a@example.com -> a")
 	campaignsCreateCmd.Flags().String("reply-to", "", "Reply-to email address")
 	campaignsCreateCmd.Flags().String("lmx", "", "LMX markup (inline)")
 	campaignsCreateCmd.Flags().String("lmx-file", "", "Path to a file containing LMX markup")
