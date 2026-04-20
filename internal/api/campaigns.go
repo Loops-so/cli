@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,6 +16,66 @@ type Campaign struct {
 	Status         string  `json:"status"`
 	CreatedAt      string  `json:"createdAt"`
 	UpdatedAt      string  `json:"updatedAt"`
+}
+
+type LmxWarning struct {
+	Rule     string `json:"rule"`
+	Severity string `json:"severity"`
+	Message  string `json:"message"`
+	Path     string `json:"path,omitempty"`
+}
+
+type CampaignEmailMessageFields struct {
+	Subject      string `json:"subject,omitempty"`
+	PreviewText  string `json:"previewText,omitempty"`
+	FromName     string `json:"fromName,omitempty"`
+	FromEmail    string `json:"fromEmail,omitempty"`
+	ReplyToEmail string `json:"replyToEmail,omitempty"`
+	LMX          string `json:"lmx,omitempty"`
+}
+
+type CreateCampaignRequest struct {
+	Name         string                      `json:"name"`
+	EmailMessage *CampaignEmailMessageFields `json:"emailMessage,omitempty"`
+}
+
+type CampaignCreateResponse struct {
+	CampaignID   string        `json:"campaignId"`
+	Name         string        `json:"name"`
+	Status       string        `json:"status"`
+	CreatedAt    string        `json:"createdAt"`
+	UpdatedAt    string        `json:"updatedAt"`
+	EmailMessage *EmailMessage `json:"emailMessage,omitempty"`
+	Warnings     []LmxWarning  `json:"warnings,omitempty"`
+}
+
+func (c *Client) CreateCampaign(req CreateCampaignRequest) (*CampaignCreateResponse, error) {
+	b, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode request: %w", err)
+	}
+
+	httpReq, err := c.newRequest(http.MethodPost, "/campaigns", bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, errorFromResponse(resp)
+	}
+
+	var result CampaignCreateResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &result, nil
 }
 
 func (c *Client) GetCampaign(id string) (*Campaign, error) {

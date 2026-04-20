@@ -1,7 +1,9 @@
 package api
 
 import (
+	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -39,6 +41,176 @@ const listCampaignsResponse = `{
 		}
 	]
 }`
+
+const createCampaignResponse = `{
+	"success": true,
+	"campaignId": "cmp_new",
+	"name": "Spring Launch",
+	"status": "Draft",
+	"createdAt": "2026-04-20T10:00:00Z",
+	"updatedAt": "2026-04-20T10:00:00Z",
+	"emailMessage": {
+		"emailMessageId": "em_new",
+		"campaignId": "cmp_new",
+		"subject": "Hello",
+		"previewText": "Preview",
+		"fromName": "Acme",
+		"fromEmail": "hello",
+		"replyToEmail": "support@acme.com",
+		"lmx": "<Text>Hi</Text>",
+		"contentRevisionId": "rev_1",
+		"updatedAt": "2026-04-20T10:00:00Z"
+	},
+	"warnings": [
+		{"rule":"unknown_attr","severity":"warning","message":"<Heading> has unknown attribute \"foo\"","path":"body.0"}
+	]
+}`
+
+func TestCreateCampaign(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		body       string
+		wantAPIErr *APIError
+		wantErrMsg string
+	}{
+		{
+			name:       "success",
+			statusCode: http.StatusCreated,
+			body:       createCampaignResponse,
+		},
+		{
+			name:       "bad request",
+			statusCode: http.StatusBadRequest,
+			body:       `{"success":false,"message":"name is required"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "name is required"},
+		},
+		{
+			name:       "lmx compile failure",
+			statusCode: http.StatusUnprocessableEntity,
+			body:       `{"success":false,"message":"LMX failed to compile"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusUnprocessableEntity, Message: "LMX failed to compile"},
+		},
+		{
+			name:       "invalid json",
+			statusCode: http.StatusCreated,
+			body:       `not json`,
+			wantErrMsg: "failed to decode response",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			client := NewClient(server.URL, "test-key", false)
+			resp, err := client.CreateCampaign(CreateCampaignRequest{Name: "Spring Launch"})
+
+			if tt.wantAPIErr != nil {
+				var apiErr *APIError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("expected *APIError, got %T: %v", err, err)
+				}
+				if apiErr.StatusCode != tt.wantAPIErr.StatusCode {
+					t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, tt.wantAPIErr.StatusCode)
+				}
+				if apiErr.Message != tt.wantAPIErr.Message {
+					t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantAPIErr.Message)
+				}
+				return
+			}
+
+			if tt.wantErrMsg != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tt.wantErrMsg)
+				}
+				if !strings.Contains(err.Error(), tt.wantErrMsg) {
+					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.wantErrMsg)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if resp.CampaignID != "cmp_new" {
+				t.Errorf("CampaignID = %q, want cmp_new", resp.CampaignID)
+			}
+			if resp.EmailMessage == nil || resp.EmailMessage.EmailMessageID != "em_new" {
+				t.Errorf("EmailMessage.EmailMessageID = %v, want em_new", resp.EmailMessage)
+			}
+			if len(resp.Warnings) != 1 || resp.Warnings[0].Rule != "unknown_attr" {
+				t.Errorf("Warnings = %v, want [unknown_attr]", resp.Warnings)
+			}
+		})
+	}
+}
+
+func TestCreateCampaign_RequestBody(t *testing.T) {
+	tests := []struct {
+		name      string
+		req       CreateCampaignRequest
+		wantName  string
+		wantEmail bool
+	}{
+		{
+			name:     "name only",
+			req:      CreateCampaignRequest{Name: "Spring"},
+			wantName: "Spring",
+		},
+		{
+			name: "with email message",
+			req: CreateCampaignRequest{
+				Name: "Spring",
+				EmailMessage: &CampaignEmailMessageFields{
+					Subject: "Hello",
+					LMX:     "<Text>Hi</Text>",
+				},
+			},
+			wantName:  "Spring",
+			wantEmail: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var body map[string]any
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				b, _ := io.ReadAll(r.Body)
+				json.Unmarshal(b, &body)
+				w.WriteHeader(http.StatusCreated)
+				w.Write([]byte(createCampaignResponse))
+			}))
+			defer server.Close()
+
+			client := NewClient(server.URL, "test-key", false)
+			if _, err := client.CreateCampaign(tt.req); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			if body["name"] != tt.wantName {
+				t.Errorf("name = %v, want %q", body["name"], tt.wantName)
+			}
+			_, hasEmail := body["emailMessage"]
+			if hasEmail != tt.wantEmail {
+				t.Errorf("emailMessage present = %v, want %v", hasEmail, tt.wantEmail)
+			}
+			if tt.wantEmail {
+				em, _ := body["emailMessage"].(map[string]any)
+				if em["subject"] != "Hello" {
+					t.Errorf("emailMessage.subject = %v, want Hello", em["subject"])
+				}
+				if em["lmx"] != "<Text>Hi</Text>" {
+					t.Errorf("emailMessage.lmx = %v", em["lmx"])
+				}
+			}
+		})
+	}
+}
 
 func TestGetCampaign(t *testing.T) {
 	body := `{

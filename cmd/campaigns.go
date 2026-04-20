@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/config"
@@ -75,6 +76,79 @@ var campaignsListCmd = &cobra.Command{
 	},
 }
 
+func runCampaignsCreate(cfg *config.Config, req api.CreateCampaignRequest) (*api.CampaignCreateResponse, error) {
+	return newAPIClient(cfg).CreateCampaign(req)
+}
+
+var campaignsCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "Create a draft campaign",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		name, _ := cmd.Flags().GetString("name")
+		subject, _ := cmd.Flags().GetString("subject")
+		previewText, _ := cmd.Flags().GetString("preview-text")
+		fromName, _ := cmd.Flags().GetString("from-name")
+		fromEmail, _ := cmd.Flags().GetString("from-email")
+		replyTo, _ := cmd.Flags().GetString("reply-to")
+		lmx, _ := cmd.Flags().GetString("lmx")
+		lmxFile, _ := cmd.Flags().GetString("lmx-file")
+
+		if lmxFile != "" {
+			data, err := os.ReadFile(lmxFile)
+			if err != nil {
+				return fmt.Errorf("read --lmx-file: %w", err)
+			}
+			lmx = string(data)
+		}
+
+		req := api.CreateCampaignRequest{Name: name}
+		if subject != "" || previewText != "" || fromName != "" || fromEmail != "" || replyTo != "" || lmx != "" {
+			req.EmailMessage = &api.CampaignEmailMessageFields{
+				Subject:      subject,
+				PreviewText:  previewText,
+				FromName:     fromName,
+				FromEmail:    fromEmail,
+				ReplyToEmail: replyTo,
+				LMX:          lmx,
+			}
+		}
+
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		resp, err := runCampaignsCreate(cfg, req)
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), resp)
+		}
+
+		emailMessageID := ""
+		if resp.EmailMessage != nil {
+			emailMessageID = resp.EmailMessage.EmailMessageID
+		}
+		fmt.Fprintf(cmd.OutOrStdout(), "Created. (id: %s, emailMessageId: %s)\n", resp.CampaignID, emailMessageID)
+
+		if len(resp.Warnings) > 0 {
+			fmt.Fprintln(cmd.OutOrStdout())
+			fmt.Fprintln(cmd.OutOrStdout(), "Warnings:")
+			for _, warn := range resp.Warnings {
+				if warn.Path != "" {
+					fmt.Fprintf(cmd.OutOrStdout(), "  [%s] %s (%s)\n", warn.Rule, warn.Message, warn.Path)
+				} else {
+					fmt.Fprintf(cmd.OutOrStdout(), "  [%s] %s\n", warn.Rule, warn.Message)
+				}
+			}
+		}
+
+		return nil
+	},
+}
+
 var campaignsGetCmd = &cobra.Command{
 	Use:   "get <id>",
 	Short: "Get a campaign",
@@ -115,5 +189,18 @@ func init() {
 	addPaginationFlags(campaignsListCmd)
 	campaignsCmd.AddCommand(campaignsListCmd)
 	campaignsCmd.AddCommand(campaignsGetCmd)
+
+	campaignsCreateCmd.Flags().StringP("name", "n", "", "Campaign name (required)")
+	campaignsCreateCmd.Flags().String("subject", "", "Email subject")
+	campaignsCreateCmd.Flags().String("preview-text", "", "Email preview text")
+	campaignsCreateCmd.Flags().String("from-name", "", "Sender name")
+	campaignsCreateCmd.Flags().String("from-email", "", "Sender email username (no @ or domain)")
+	campaignsCreateCmd.Flags().String("reply-to", "", "Reply-to email address")
+	campaignsCreateCmd.Flags().String("lmx", "", "LMX markup (inline)")
+	campaignsCreateCmd.Flags().String("lmx-file", "", "Path to a file containing LMX markup")
+	campaignsCreateCmd.MarkFlagRequired("name")
+	campaignsCreateCmd.MarkFlagsMutuallyExclusive("lmx", "lmx-file")
+	campaignsCmd.AddCommand(campaignsCreateCmd)
+
 	rootCmd.AddCommand(campaignsCmd)
 }
