@@ -215,7 +215,7 @@ func init() {
 	emailMessagesCmd.AddCommand(emailMessagesGetCmd)
 
 	addEmailMessageFieldFlags(emailMessagesUpdateCmd)
-	emailMessagesUpdateCmd.Flags().String("expected-revision-id", "", "Last-seen contentRevisionId. If omitted, the CLI fetches the current revision before posting.")
+	emailMessagesUpdateCmd.Flags().StringP("expected-revision-id", "r", "", "Last-seen contentRevisionId. If omitted, the CLI fetches the current revision before posting.")
 	emailMessagesUpdateCmd.MarkFlagsOneRequired("subject", "preview-text", "from-name", "from-email", "reply-to", "lmx", "lmx-file")
 	emailMessagesCmd.AddCommand(emailMessagesUpdateCmd)
 
