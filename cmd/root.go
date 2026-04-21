@@ -1,10 +1,14 @@
 package cmd
 
 import (
-	"fmt"
+	"context"
+	"io"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
+	"charm.land/fang/v2"
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
@@ -13,6 +17,7 @@ import (
 var outputFormat outputFlag = "text"
 var teamFlag string
 var debugFlag bool
+var colorFlag = true
 
 func newAPIClient(cfg *config.Config) *api.Client {
 	return api.NewClient(cfg.EndpointURL, cfg.APIKey, cfg.Debug).
@@ -36,18 +41,12 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 }
 
-func fixHelpFlags(cmd *cobra.Command) {
-	cmd.InitDefaultHelpFlag()
-	if f := cmd.Flags().Lookup("help"); f != nil {
-		name := cmd.Name()
-		if name == "" {
-			name = "this command"
-		}
-		f.Usage = "Help for " + name
+func jsonAwareErrorHandler(w io.Writer, styles fang.Styles, err error) {
+	if isJSONOutput() {
+		_ = printJSON(w, Result{Success: false, Message: err.Error()})
+		return
 	}
-	for _, sub := range cmd.Commands() {
-		fixHelpFlags(sub)
-	}
+	fang.DefaultErrorHandler(w, styles, err)
 }
 
 func Execute() {
@@ -63,18 +62,37 @@ func Execute() {
 		}
 	}()
 
-	fixHelpFlags(rootCmd)
-	err := rootCmd.Execute()
+	applyColorArg(os.Args[1:])
+
+	err := fang.Execute(
+		context.Background(),
+		rootCmd,
+		fang.WithVersion(version),
+		fang.WithCommit(commit),
+		fang.WithErrorHandler(jsonAwareErrorHandler),
+	)
 
 	checkForUpdate(os.Stderr)
 
 	if err != nil {
-		if isJSONOutput() {
-			printJSON(os.Stderr, Result{Success: false, Message: err.Error()})
-		} else {
-			fmt.Fprintln(os.Stderr, "Error:", err)
-		}
 		os.Exit(1)
+	}
+}
+
+// applyColorArg scans args for --color=<bool> and sets NO_COLOR=1 when the user
+// passes a false value. fang/lipgloss capture the color profile before cobra
+// parses persistent flags, so a flag-parse hook would miss cases like unknown
+// command errors — hence the early scan.
+func applyColorArg(args []string) {
+	for _, a := range args {
+		if !strings.HasPrefix(a, "--color=") {
+			continue
+		}
+		v := strings.TrimPrefix(a, "--color=")
+		if b, err := strconv.ParseBool(v); err == nil && !b {
+			os.Setenv("NO_COLOR", "1")
+		}
+		return
 	}
 }
 
@@ -82,4 +100,5 @@ func init() {
 	rootCmd.PersistentFlags().VarP(&outputFormat, "output", "o", "Output format (text, json)")
 	rootCmd.PersistentFlags().StringVarP(&teamFlag, "team", "t", "", "Team key name to use")
 	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Print API request details before sending")
+	rootCmd.PersistentFlags().BoolVar(&colorFlag, "color", true, "Enable colored output (--color=false to disable)")
 }
