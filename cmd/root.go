@@ -4,8 +4,6 @@ import (
 	"context"
 	"io"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"charm.land/fang/v2"
@@ -17,7 +15,6 @@ import (
 var outputFormat outputFlag = "text"
 var teamFlag string
 var debugFlag bool
-var colorFlag = true
 
 func newAPIClient(cfg *config.Config) *api.Client {
 	return api.NewClient(cfg.EndpointURL, cfg.APIKey, cfg.Debug).
@@ -62,8 +59,6 @@ func Execute() {
 		}
 	}()
 
-	applyColorArg(os.Args[1:])
-
 	err := fang.Execute(
 		context.Background(),
 		rootCmd,
@@ -79,36 +74,8 @@ func Execute() {
 	}
 }
 
-// applyColorArg scans args for --color and sets NO_COLOR=1 when the user
-// passes a false value. fang/lipgloss capture the color profile before cobra
-// parses persistent flags, so a flag-parse hook would miss cases like unknown
-// command errors — hence the early scan. Handles both --color=false and
-// --color false forms.
-func applyColorArg(args []string) {
-	for i, a := range args {
-		var v string
-		switch {
-		case strings.HasPrefix(a, "--color="):
-			v = strings.TrimPrefix(a, "--color=")
-		case a == "--color" && i+1 < len(args):
-			v = args[i+1]
-		default:
-			continue
-		}
-		if b, err := strconv.ParseBool(v); err == nil && !b {
-			os.Setenv("NO_COLOR", "1")
-		}
-		return
-	}
-}
-
 func init() {
 	rootCmd.PersistentFlags().VarP(&outputFormat, "output", "o", "Output format (text, json)")
 	rootCmd.PersistentFlags().StringVarP(&teamFlag, "team", "t", "", "Team key name to use")
 	rootCmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Print API request details before sending")
-	rootCmd.PersistentFlags().BoolVar(&colorFlag, "color", true, "Enable colored output (--color=false to disable)")
-	// Drop the default no-arg behavior so pflag accepts both --color=false and
-	// --color false; without this, --color is a bare bool and "false" would be
-	// parsed as an unknown subcommand.
-	rootCmd.PersistentFlags().Lookup("color").NoOptDefVal = ""
 }
