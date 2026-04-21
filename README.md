@@ -56,10 +56,6 @@ Store a key with `loops auth login --name <name>`. Run this again with a differe
 
 Use `--team <name>` on any command to pick a specific stored key.
 
-### Environment variable
-
-Set `LOOPS_API_KEY` to use a key directly — useful for CI or when keyring storage isn't available.
-
 ### Precedence
 
 When multiple keys are available, the CLI resolves them in this order:
@@ -67,3 +63,10 @@ When multiple keys are available, the CLI resolves them in this order:
 1. `LOOPS_API_KEY` env var
 1. `--team` flag
 1. The current default (set via `loops auth use`)
+
+## Environment variables
+
+| Variable | Description |
+| --- | --- |
+| `LOOPS_API_KEY` | API key to use directly — useful for CI or when keyring storage isn't available. |
+| `NO_COLOR` | Set to `1` to disable color output. `0` or unset leaves color on. |
