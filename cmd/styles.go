@@ -1,64 +1,62 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"strings"
 	"sync"
-	"text/tabwriter"
 
 	"charm.land/fang/v2"
 	"charm.land/lipgloss/v2"
+	"charm.land/lipgloss/v2/table"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/term"
 )
 
-var headingStyle = sync.OnceValue(func() lipgloss.Style {
+var fangColorScheme = sync.OnceValue(func() fang.ColorScheme {
 	isDark := true
 	if term.IsTerminal(os.Stdout.Fd()) {
 		isDark = lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
 	}
-	cs := fang.DefaultColorScheme(lipgloss.LightDark(isDark))
-	return lipgloss.NewStyle().
-		Bold(true).
-		Foreground(cs.Title).
-		Transform(strings.ToUpper)
+	return fang.DefaultColorScheme(lipgloss.LightDark(isDark))
 })
 
-// styledTable wraps tabwriter so the first written row (the header) is rendered
-// with the fang heading style on Flush. Buffering until Flush lets tabwriter
-// compute column widths from the plain text, then styling is applied after
-// alignment so ANSI escapes don't throw off the layout. Color is stripped
-// automatically when the destination is not a TTY.
 type styledTable struct {
 	out io.Writer
-	buf bytes.Buffer
-	tw  *tabwriter.Writer
+	t   *table.Table
 }
 
-func newStyledTable(out io.Writer) *styledTable {
-	s := &styledTable{out: out}
-	s.tw = tabwriter.NewWriter(&s.buf, 0, 0, 2, ' ', 0)
-	return s
+func newStyledTable(out io.Writer, headers ...string) *styledTable {
+	cs := fangColorScheme()
+	t := table.New().
+		BorderTop(false).
+		BorderBottom(false).
+		BorderLeft(false).
+		BorderRight(false).
+		BorderColumn(false).
+		BorderRow(false).
+		BorderHeader(true).
+		Headers(headers...).
+		StyleFunc(func(row, col int) lipgloss.Style {
+			base := lipgloss.NewStyle().Padding(0, 1)
+			if row == table.HeaderRow {
+				return base.
+					Bold(true).
+					Foreground(cs.Title).
+					Transform(strings.ToUpper)
+			}
+			return base
+		})
+	return &styledTable{out: out, t: t}
 }
 
-func (s *styledTable) Write(p []byte) (int, error) { return s.tw.Write(p) }
+func (s *styledTable) Row(cells ...string) {
+	s.t.Row(cells...)
+}
 
-func (s *styledTable) Flush() error {
-	if err := s.tw.Flush(); err != nil {
-		return err
-	}
+func (s *styledTable) Render() error {
 	cw := colorprofile.NewWriter(s.out, os.Environ())
-	header, body, _ := strings.Cut(s.buf.String(), "\n")
-	if _, err := fmt.Fprintln(cw, headingStyle().Render(header)); err != nil {
-		return err
-	}
-	if body != "" {
-		if _, err := fmt.Fprint(cw, body); err != nil {
-			return err
-		}
-	}
-	return nil
+	_, err := fmt.Fprintln(cw, s.t.Render())
+	return err
 }

@@ -43,14 +43,11 @@ var listsListCmd = &cobra.Command{
 			return nil
 		}
 
-		w := newStyledTable(cmd.OutOrStdout())
-		fmt.Fprintln(w, "ID\tNAME\tDESCRIPTION\tPUBLIC")
+		t := newStyledTable(cmd.OutOrStdout(), "ID", "NAME", "DESCRIPTION", "PUBLIC")
 		for _, l := range lists {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%v\n", l.ID, l.Name, l.Description, l.IsPublic)
+			t.Row(l.ID, l.Name, l.Description, fmt.Sprintf("%v", l.IsPublic))
 		}
-		w.Flush()
-
-		return nil
+		return t.Render()
 	},
 }
 

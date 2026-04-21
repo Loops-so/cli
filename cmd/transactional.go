@@ -103,14 +103,11 @@ var transactionalListCmd = &cobra.Command{
 			return nil
 		}
 
-		w := newTableWriter(cmd.OutOrStdout())
-		fmt.Fprintln(w, "ID\tNAME\tLAST UPDATED\tVARIABLES")
+		t := newStyledTable(cmd.OutOrStdout(), "ID", "NAME", "LAST UPDATED", "VARIABLES")
 		for _, e := range emails {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", e.ID, e.Name, e.LastUpdated, strings.Join(e.DataVariables, ", "))
+			t.Row(e.ID, e.Name, e.LastUpdated, strings.Join(e.DataVariables, ", "))
 		}
-		w.Flush()
-
-		return nil
+		return t.Render()
 	},
 }
 
