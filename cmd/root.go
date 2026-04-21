@@ -1,10 +1,12 @@
 package cmd
 
 import (
-	"fmt"
+	"context"
+	"io"
 	"os"
 	"time"
 
+	"charm.land/fang/v2"
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
@@ -36,18 +38,12 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 }
 
-func fixHelpFlags(cmd *cobra.Command) {
-	cmd.InitDefaultHelpFlag()
-	if f := cmd.Flags().Lookup("help"); f != nil {
-		name := cmd.Name()
-		if name == "" {
-			name = "this command"
-		}
-		f.Usage = "Help for " + name
+func jsonAwareErrorHandler(w io.Writer, styles fang.Styles, err error) {
+	if isJSONOutput() {
+		_ = printJSON(w, Result{Success: false, Message: err.Error()})
+		return
 	}
-	for _, sub := range cmd.Commands() {
-		fixHelpFlags(sub)
-	}
+	fang.DefaultErrorHandler(w, styles, err)
 }
 
 func Execute() {
@@ -63,17 +59,17 @@ func Execute() {
 		}
 	}()
 
-	fixHelpFlags(rootCmd)
-	err := rootCmd.Execute()
+	err := fang.Execute(
+		context.Background(),
+		rootCmd,
+		fang.WithVersion(version),
+		fang.WithCommit(commit),
+		fang.WithErrorHandler(jsonAwareErrorHandler),
+	)
 
 	checkForUpdate(os.Stderr)
 
 	if err != nil {
-		if isJSONOutput() {
-			printJSON(os.Stderr, Result{Success: false, Message: err.Error()})
-		} else {
-			fmt.Fprintln(os.Stderr, "Error:", err)
-		}
 		os.Exit(1)
 	}
 }

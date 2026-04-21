@@ -131,14 +131,13 @@ var contactsFindCmd = &cobra.Command{
 		}
 
 		c := contacts[0]
-		w := newTableWriter(cmd.OutOrStdout())
-		fmt.Fprintln(w, "FIELD\tVALUE\tCUSTOM")
+		t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE", "CUSTOM")
 		row := func(field, value string, custom bool) {
 			marker := ""
 			if custom {
 				marker = "*"
 			}
-			fmt.Fprintf(w, "%s\t%s\t%s\n", field, value, marker)
+			t.Row(field, value, marker)
 		}
 		row("id", c.ID, false)
 		row("email", c.Email, false)
@@ -153,9 +152,7 @@ var contactsFindCmd = &cobra.Command{
 		for _, k := range sortedKeys(c.Custom) {
 			row(k, formatCustomValue(c.Custom[k]), true)
 		}
-		w.Flush()
-
-		return nil
+		return t.Render()
 	},
 }
 

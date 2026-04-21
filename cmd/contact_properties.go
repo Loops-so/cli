@@ -49,14 +49,11 @@ var contactPropertiesListCmd = &cobra.Command{
 			return nil
 		}
 
-		w := newTableWriter(cmd.OutOrStdout())
-		fmt.Fprintln(w, "KEY\tLABEL\tTYPE")
+		t := newStyledTable(cmd.OutOrStdout(), "KEY", "LABEL", "TYPE")
 		for _, p := range props {
-			fmt.Fprintf(w, "%s\t%s\t%s\n", p.Key, p.Label, p.Type)
+			t.Row(p.Key, p.Label, p.Type)
 		}
-		w.Flush()
-
-		return nil
+		return t.Render()
 	},
 }
 

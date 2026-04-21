@@ -34,11 +34,12 @@ var statusCmd = &cobra.Command{
 			activeKey = "(none)"
 		}
 
-		fmt.Fprintf(cmd.OutOrStdout(), "Active Key: %s\n", activeKey)
-		fmt.Fprintf(cmd.OutOrStdout(), "API Key:    %s\n", masked)
-		fmt.Fprintf(cmd.OutOrStdout(), "Team:       %s\n", keyResp.TeamName)
-		fmt.Fprintf(cmd.OutOrStdout(), "Endpoint:   %s\n", cfg.EndpointURL)
-		return nil
+		t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
+		t.Row("activeKey", activeKey)
+		t.Row("apiKey", masked)
+		t.Row("teamName", keyResp.TeamName)
+		t.Row("endpointUrl", cfg.EndpointURL)
+		return t.Render()
 	},
 }
 
