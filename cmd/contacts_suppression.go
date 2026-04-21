@@ -48,9 +48,10 @@ var contactsSuppressionCheckCmd = &cobra.Command{
 		if result.IsSuppressed {
 			suppressed = "yes"
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "Suppressed: %s\n", suppressed)
-		fmt.Fprintf(cmd.OutOrStdout(), "Removal quota: %d/%d remaining\n", result.RemovalQuota.Remaining, result.RemovalQuota.Limit)
-		return nil
+		t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
+		t.Row("isSuppressed", suppressed)
+		t.Row("removalQuota", fmt.Sprintf("%d/%d remaining", result.RemovalQuota.Remaining, result.RemovalQuota.Limit))
+		return t.Render()
 	},
 }
 
