@@ -117,8 +117,7 @@ var emailMessagesGetCmd = &cobra.Command{
 			return printJSON(cmd.OutOrStdout(), msg)
 		}
 
-		printEmailMessage(cmd, msg)
-		return nil
+		return printEmailMessage(cmd, msg)
 	},
 }
 
@@ -168,32 +167,33 @@ var emailMessagesUpdateCmd = &cobra.Command{
 
 		fmt.Fprintf(cmd.OutOrStdout(), "Updated. (emailMessageId: %s, contentRevisionId: %s)\n", msg.EmailMessageID, deref(msg.ContentRevisionID))
 		fmt.Fprintln(cmd.OutOrStdout())
-		printEmailMessage(cmd, msg)
+		if err := printEmailMessage(cmd, msg); err != nil {
+			return err
+		}
 		printLmxWarnings(cmd, msg.Warnings)
 		return nil
 	},
 }
 
-func printEmailMessage(cmd *cobra.Command, msg *api.EmailMessage) {
-	w := newTableWriter(cmd.OutOrStdout())
-	fmt.Fprintln(w, "FIELD\tVALUE")
-	row := func(field, value string) {
-		fmt.Fprintf(w, "%s\t%s\n", field, value)
+func printEmailMessage(cmd *cobra.Command, msg *api.EmailMessage) error {
+	t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
+	t.Row("emailMessageId", msg.EmailMessageID)
+	t.Row("campaignId", deref(msg.CampaignID))
+	t.Row("subject", msg.Subject)
+	t.Row("previewText", msg.PreviewText)
+	t.Row("fromName", msg.FromName)
+	t.Row("fromEmail", msg.FromEmail)
+	t.Row("replyToEmail", msg.ReplyToEmail)
+	t.Row("contentRevisionId", deref(msg.ContentRevisionID))
+	t.Row("updatedAt", msg.UpdatedAt)
+	if err := t.Render(); err != nil {
+		return err
 	}
-	row("emailMessageId", msg.EmailMessageID)
-	row("campaignId", deref(msg.CampaignID))
-	row("subject", msg.Subject)
-	row("previewText", msg.PreviewText)
-	row("fromName", msg.FromName)
-	row("fromEmail", msg.FromEmail)
-	row("replyToEmail", msg.ReplyToEmail)
-	row("contentRevisionId", deref(msg.ContentRevisionID))
-	row("updatedAt", msg.UpdatedAt)
-	w.Flush()
 
 	fmt.Fprintln(cmd.OutOrStdout())
 	fmt.Fprintln(cmd.OutOrStdout(), "LMX:")
 	fmt.Fprintln(cmd.OutOrStdout(), msg.LMX)
+	return nil
 }
 
 func printLmxWarnings(cmd *cobra.Command, warnings []api.LmxWarning) {

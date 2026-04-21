@@ -63,10 +63,9 @@ var campaignsListCmd = &cobra.Command{
 			return nil
 		}
 
-		w := newTableWriter(cmd.OutOrStdout())
-		fmt.Fprintln(w, "ID\tMESSAGE ID\tNAME\tSTATUS\tSUBJECT\tUPDATED")
+		t := newStyledTable(cmd.OutOrStdout(), "ID", "MESSAGE ID", "NAME", "STATUS", "SUBJECT", "UPDATED")
 		for _, c := range campaigns {
-			fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\t%s\n",
+			t.Row(
 				c.CampaignID,
 				deref(c.EmailMessageID),
 				c.Name,
@@ -75,9 +74,7 @@ var campaignsListCmd = &cobra.Command{
 				c.UpdatedAt,
 			)
 		}
-		w.Flush()
-
-		return nil
+		return t.Render()
 	},
 }
 
@@ -162,20 +159,14 @@ var campaignsGetCmd = &cobra.Command{
 			return printJSON(cmd.OutOrStdout(), c)
 		}
 
-		w := newTableWriter(cmd.OutOrStdout())
-		fmt.Fprintln(w, "FIELD\tVALUE")
-		row := func(field, value string) {
-			fmt.Fprintf(w, "%s\t%s\n", field, value)
-		}
-		row("campaignId", c.CampaignID)
-		row("emailMessageId", deref(c.EmailMessageID))
-		row("name", c.Name)
-		row("status", c.Status)
-		row("createdAt", c.CreatedAt)
-		row("updatedAt", c.UpdatedAt)
-		w.Flush()
-
-		return nil
+		t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
+		t.Row("campaignId", c.CampaignID)
+		t.Row("emailMessageId", deref(c.EmailMessageID))
+		t.Row("name", c.Name)
+		t.Row("status", c.Status)
+		t.Row("createdAt", c.CreatedAt)
+		t.Row("updatedAt", c.UpdatedAt)
+		return t.Render()
 	},
 }
 
