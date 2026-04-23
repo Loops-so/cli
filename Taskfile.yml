@@ -46,10 +46,30 @@ tasks:
       - git tag {{.tag}}
       - git push origin {{.tag}}
     preconditions:
+      - sh: 'echo "{{.tag}}" | grep -Eq "^v[0-9]+\.[0-9]+\.[0-9]+$"'
+        msg: "tag {{.tag}} must be a release formatted: v0.0.0 (use release:pre for prereleases)"
       - sh: '[ -z "$(git ls-remote --tags origin refs/tags/{{.tag}})" ]'
         msg: "tag {{.tag}} already exists on remote"
       - sh: '[ "$(git branch --show-current)" = "main" ]'
         msg: make sure you're on main
+
+  release:pre:
+    desc: release a new cli prerelease version
+    aliases: [prerelease]
+    deps:
+      - release:check
+    requires:
+      vars:
+        - tag
+    cmds:
+      - git pull --rebase
+      - git tag {{.tag}}
+      - git push origin {{.tag}}
+    preconditions:
+      - sh: 'echo "{{.tag}}" | grep -Eq "^v[0-9]+\.[0-9]+\.[0-9]+-[0-9A-Za-z.-]+$"'
+        msg: "tag {{.tag}} must be prerelease formatted: v0.0.0-some-tag"
+      - sh: '[ -z "$(git ls-remote --tags origin refs/tags/{{.tag}})" ]'
+        msg: "tag {{.tag}} already exists on remote"
 
   release:local:
     desc: build with goreleaser

@@ -70,6 +70,26 @@ func errorFromResponse(resp *http.Response) *APIError {
 	return &APIError{StatusCode: resp.StatusCode, Message: fmt.Sprintf("unexpected status: %d", resp.StatusCode)}
 }
 
+func (c *Client) logResponse(resp *http.Response) {
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[debug] Response: %s (body read failed: %v)\n", resp.Status, err)
+		resp.Body = io.NopCloser(bytes.NewReader(nil))
+		return
+	}
+	resp.Body = io.NopCloser(bytes.NewReader(raw))
+	fmt.Fprintf(os.Stderr, "[debug] Response: %s (%d bytes)\n", resp.Status, len(raw))
+	if len(raw) == 0 {
+		return
+	}
+	var pretty bytes.Buffer
+	if json.Indent(&pretty, raw, "", "  ") == nil {
+		fmt.Fprintf(os.Stderr, "[debug] Body:\n%s\n", pretty.String())
+	} else {
+		fmt.Fprintf(os.Stderr, "[debug] Body: %s\n", raw)
+	}
+}
+
 func (c *Client) do(req *http.Request) (*http.Response, error) {
 	var (
 		resp *http.Response
@@ -96,6 +116,9 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 			continue
 		}
 		if !isRetryable(resp.StatusCode) {
+			if c.debug {
+				c.logResponse(resp)
+			}
 			return resp, nil
 		}
 		if attempt < maxRetries {

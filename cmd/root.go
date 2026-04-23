@@ -2,8 +2,10 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"charm.land/fang/v2"
@@ -39,11 +41,13 @@ var rootCmd = &cobra.Command{
 }
 
 func jsonAwareErrorHandler(w io.Writer, styles fang.Styles, err error) {
+	// fang always appends a period to error output. if err has a trailing period, strip it.
+	msg := strings.TrimRight(err.Error(), ".")
 	if isJSONOutput() {
-		_ = printJSON(w, Result{Success: false, Message: err.Error()})
+		_ = printJSON(w, Result{Success: false, Message: msg})
 		return
 	}
-	fang.DefaultErrorHandler(w, styles, err)
+	fang.DefaultErrorHandler(w, styles, errors.New(msg))
 }
 
 func Execute() {
