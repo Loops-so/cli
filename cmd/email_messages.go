@@ -3,11 +3,17 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
+
+func fromEmailUsername(s string) string {
+	before, _, _ := strings.Cut(s, "@")
+	return before
+}
 
 // emailMessageFieldParams holds the six content fields shared by
 // `campaigns create` and `email-messages update`. Set records which fields the

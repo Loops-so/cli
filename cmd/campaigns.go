@@ -2,29 +2,23 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
-func fromEmailUsername(s string) string {
-	before, _, _ := strings.Cut(s, "@")
-	return before
-}
-
 func runCampaignsGet(cfg *config.Config, id string) (*api.Campaign, error) {
 	return newAPIClient(cfg).GetCampaign(id)
 }
 
-func runCampaignsList(cfg *config.Config, params api.PaginationParams) ([]api.Campaign, error) {
+func runCampaignsList(cfg *config.Config, params api.PaginationParams) ([]api.CampaignListItem, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
 		campaigns, _, err := client.ListCampaigns(params)
 		return campaigns, err
 	}
-	return api.Paginate(func(cursor string) ([]api.Campaign, *api.Pagination, error) {
+	return api.Paginate(func(cursor string) ([]api.CampaignListItem, *api.Pagination, error) {
 		return client.ListCampaigns(api.PaginationParams{
 			PerPage: params.PerPage,
 			Cursor:  cursor,
@@ -53,7 +47,7 @@ var campaignsListCmd = &cobra.Command{
 
 		if isJSONOutput() {
 			if campaigns == nil {
-				campaigns = []api.Campaign{}
+				campaigns = []api.CampaignListItem{}
 			}
 			return printJSON(cmd.OutOrStdout(), campaigns)
 		}
@@ -87,29 +81,13 @@ var campaignsCreateCmd = &cobra.Command{
 	Short: "Create a draft campaign",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name, _ := cmd.Flags().GetString("name")
-		params, err := emailMessageFieldParamsFromCmd(cmd)
-		if err != nil {
-			return err
-		}
-
-		req := api.CreateCampaignRequest{Name: name}
-		if len(params.Set) > 0 {
-			req.EmailMessage = &api.EmailMessageFields{
-				Subject:      params.Subject,
-				PreviewText:  params.PreviewText,
-				FromName:     params.FromName,
-				FromEmail:    params.FromEmail,
-				ReplyToEmail: params.ReplyToEmail,
-				LMX:          params.LMX,
-			}
-		}
 
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
 		}
 
-		resp, err := runCampaignsCreate(cfg, req)
+		resp, err := runCampaignsCreate(cfg, api.CreateCampaignRequest{Name: name})
 		if err != nil {
 			return err
 		}
@@ -118,24 +96,7 @@ var campaignsCreateCmd = &cobra.Command{
 			return printJSON(cmd.OutOrStdout(), resp)
 		}
 
-		emailMessageID := ""
-		if resp.EmailMessage != nil {
-			emailMessageID = resp.EmailMessage.EmailMessageID
-		}
-		fmt.Fprintf(cmd.OutOrStdout(), "Created. (id: %s, emailMessageId: %s)\n", resp.CampaignID, emailMessageID)
-
-		if len(resp.Warnings) > 0 {
-			fmt.Fprintln(cmd.OutOrStdout())
-			fmt.Fprintln(cmd.OutOrStdout(), "Warnings:")
-			for _, warn := range resp.Warnings {
-				if warn.Path != "" {
-					fmt.Fprintf(cmd.OutOrStdout(), "  [%s] %s (%s)\n", warn.Rule, warn.Message, warn.Path)
-				} else {
-					fmt.Fprintf(cmd.OutOrStdout(), "  [%s] %s\n", warn.Rule, warn.Message)
-				}
-			}
-		}
-
+		fmt.Fprintf(cmd.OutOrStdout(), "Created. (id: %s, emailMessageId: %s, contentRevisionId: %s)\n", resp.CampaignID, deref(resp.EmailMessageID), deref(resp.EmailMessageContentRevisionID))
 		return nil
 	},
 }
@@ -176,7 +137,6 @@ func init() {
 	campaignsCmd.AddCommand(campaignsGetCmd)
 
 	campaignsCreateCmd.Flags().StringP("name", "n", "", "Campaign name (required)")
-	addEmailMessageFieldFlags(campaignsCreateCmd)
 	campaignsCreateCmd.MarkFlagRequired("name")
 	campaignsCmd.AddCommand(campaignsCreateCmd)
 

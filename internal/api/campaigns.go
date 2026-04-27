@@ -12,6 +12,15 @@ type Campaign struct {
 	CampaignID     string  `json:"campaignId"`
 	EmailMessageID *string `json:"emailMessageId"`
 	Name           string  `json:"name"`
+	Status         string  `json:"status"`
+	CreatedAt      string  `json:"createdAt"`
+	UpdatedAt      string  `json:"updatedAt"`
+}
+
+type CampaignListItem struct {
+	CampaignID     string  `json:"campaignId"`
+	EmailMessageID *string `json:"emailMessageId"`
+	Name           string  `json:"name"`
 	Subject        string  `json:"subject"`
 	Status         string  `json:"status"`
 	CreatedAt      string  `json:"createdAt"`
@@ -35,18 +44,12 @@ type EmailMessageFields struct {
 }
 
 type CreateCampaignRequest struct {
-	Name         string              `json:"name"`
-	EmailMessage *EmailMessageFields `json:"emailMessage,omitempty"`
+	Name string `json:"name"`
 }
 
 type CampaignCreateResponse struct {
-	CampaignID   string        `json:"campaignId"`
-	Name         string        `json:"name"`
-	Status       string        `json:"status"`
-	CreatedAt    string        `json:"createdAt"`
-	UpdatedAt    string        `json:"updatedAt"`
-	EmailMessage *EmailMessage `json:"emailMessage,omitempty"`
-	Warnings     []LmxWarning  `json:"warnings,omitempty"`
+	Campaign
+	EmailMessageContentRevisionID *string `json:"emailMessageContentRevisionId"`
 }
 
 func (c *Client) CreateCampaign(req CreateCampaignRequest) (*CampaignCreateResponse, error) {
@@ -102,7 +105,7 @@ func (c *Client) GetCampaign(id string) (*Campaign, error) {
 	return &result, nil
 }
 
-func (c *Client) ListCampaigns(params PaginationParams) ([]Campaign, *Pagination, error) {
+func (c *Client) ListCampaigns(params PaginationParams) ([]CampaignListItem, *Pagination, error) {
 	q := url.Values{}
 	if params.PerPage != "" {
 		q.Set("perPage", params.PerPage)
@@ -132,8 +135,8 @@ func (c *Client) ListCampaigns(params PaginationParams) ([]Campaign, *Pagination
 	}
 
 	var result struct {
-		Pagination Pagination `json:"pagination"`
-		Data       []Campaign `json:"data"`
+		Pagination Pagination         `json:"pagination"`
+		Data       []CampaignListItem `json:"data"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, nil, fmt.Errorf("failed to decode response: %w", err)

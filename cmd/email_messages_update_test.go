@@ -57,6 +57,26 @@ func TestRunEmailMessagesUpdate(t *testing.T) {
 	})
 }
 
+func TestFromEmailUsername(t *testing.T) {
+	tests := []struct {
+		in   string
+		want string
+	}{
+		{"hello", "hello"},
+		{"hello@acme.com", "hello"},
+		{"hello@", "hello"},
+		{"", ""},
+		{"@acme.com", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.in, func(t *testing.T) {
+			if got := fromEmailUsername(tt.in); got != tt.want {
+				t.Errorf("fromEmailUsername(%q) = %q, want %q", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestEmailMessageFieldParamsFromCmd(t *testing.T) {
 	t.Run("unset flags are absent from Set", func(t *testing.T) {
 		cmd := &cobra.Command{}

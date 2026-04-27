@@ -49,21 +49,8 @@ const createCampaignResponse = `{
 	"status": "Draft",
 	"createdAt": "2026-04-20T10:00:00Z",
 	"updatedAt": "2026-04-20T10:00:00Z",
-	"emailMessage": {
-		"emailMessageId": "em_new",
-		"campaignId": "cmp_new",
-		"subject": "Hello",
-		"previewText": "Preview",
-		"fromName": "Acme",
-		"fromEmail": "hello",
-		"replyToEmail": "support@acme.com",
-		"lmx": "<Paragraph>Hi</Paragraph>",
-		"contentRevisionId": "rev_1",
-		"updatedAt": "2026-04-20T10:00:00Z"
-	},
-	"warnings": [
-		{"rule":"unknown_attr","severity":"warning","message":"<Heading> has unknown attribute \"foo\"","path":"body.0"}
-	]
+	"emailMessageId": "em_new",
+	"emailMessageContentRevisionId": "rev_1"
 }`
 
 func TestCreateCampaign(t *testing.T) {
@@ -84,12 +71,6 @@ func TestCreateCampaign(t *testing.T) {
 			statusCode: http.StatusBadRequest,
 			body:       `{"success":false,"message":"name is required"}`,
 			wantAPIErr: &APIError{StatusCode: http.StatusBadRequest, Message: "name is required"},
-		},
-		{
-			name:       "lmx compile failure",
-			statusCode: http.StatusUnprocessableEntity,
-			body:       `{"success":false,"message":"LMX failed to compile"}`,
-			wantAPIErr: &APIError{StatusCode: http.StatusUnprocessableEntity, Message: "LMX failed to compile"},
 		},
 		{
 			name:       "invalid json",
@@ -140,75 +121,36 @@ func TestCreateCampaign(t *testing.T) {
 			if resp.CampaignID != "cmp_new" {
 				t.Errorf("CampaignID = %q, want cmp_new", resp.CampaignID)
 			}
-			if resp.EmailMessage == nil || resp.EmailMessage.EmailMessageID != "em_new" {
-				t.Errorf("EmailMessage.EmailMessageID = %v, want em_new", resp.EmailMessage)
+			if resp.EmailMessageID == nil || *resp.EmailMessageID != "em_new" {
+				t.Errorf("EmailMessageID = %v, want em_new", resp.EmailMessageID)
 			}
-			if len(resp.Warnings) != 1 || resp.Warnings[0].Rule != "unknown_attr" {
-				t.Errorf("Warnings = %v, want [unknown_attr]", resp.Warnings)
+			if resp.EmailMessageContentRevisionID == nil || *resp.EmailMessageContentRevisionID != "rev_1" {
+				t.Errorf("EmailMessageContentRevisionID = %v, want rev_1", resp.EmailMessageContentRevisionID)
 			}
 		})
 	}
 }
 
 func TestCreateCampaign_RequestBody(t *testing.T) {
-	tests := []struct {
-		name      string
-		req       CreateCampaignRequest
-		wantName  string
-		wantEmail bool
-	}{
-		{
-			name:     "name only",
-			req:      CreateCampaignRequest{Name: "Spring"},
-			wantName: "Spring",
-		},
-		{
-			name: "with email message",
-			req: CreateCampaignRequest{
-				Name: "Spring",
-				EmailMessage: &EmailMessageFields{
-					Subject: "Hello",
-					LMX:     "<Paragraph>Hi</Paragraph>",
-				},
-			},
-			wantName:  "Spring",
-			wantEmail: true,
-		},
+	var body map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		b, _ := io.ReadAll(r.Body)
+		json.Unmarshal(b, &body)
+		w.WriteHeader(http.StatusCreated)
+		w.Write([]byte(createCampaignResponse))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key", false)
+	if _, err := client.CreateCampaign(CreateCampaignRequest{Name: "Spring"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var body map[string]any
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				b, _ := io.ReadAll(r.Body)
-				json.Unmarshal(b, &body)
-				w.WriteHeader(http.StatusCreated)
-				w.Write([]byte(createCampaignResponse))
-			}))
-			defer server.Close()
-
-			client := NewClient(server.URL, "test-key", false)
-			if _, err := client.CreateCampaign(tt.req); err != nil {
-				t.Fatalf("unexpected error: %v", err)
-			}
-
-			if body["name"] != tt.wantName {
-				t.Errorf("name = %v, want %q", body["name"], tt.wantName)
-			}
-			_, hasEmail := body["emailMessage"]
-			if hasEmail != tt.wantEmail {
-				t.Errorf("emailMessage present = %v, want %v", hasEmail, tt.wantEmail)
-			}
-			if tt.wantEmail {
-				em, _ := body["emailMessage"].(map[string]any)
-				if em["subject"] != "Hello" {
-					t.Errorf("emailMessage.subject = %v, want Hello", em["subject"])
-				}
-				if em["lmx"] != "<Paragraph>Hi</Paragraph>" {
-					t.Errorf("emailMessage.lmx = %v", em["lmx"])
-				}
-			}
-		})
+	if body["name"] != "Spring" {
+		t.Errorf("name = %v, want Spring", body["name"])
+	}
+	if _, hasEmail := body["emailMessage"]; hasEmail {
+		t.Errorf("emailMessage should not be present in request body, got %v", body["emailMessage"])
 	}
 }
 
