@@ -47,6 +47,10 @@ type CreateCampaignRequest struct {
 	Name string `json:"name"`
 }
 
+type UpdateCampaignRequest struct {
+	Name string `json:"name"`
+}
+
 type CampaignCreateResponse struct {
 	Campaign
 	EmailMessageContentRevisionID *string `json:"emailMessageContentRevisionId"`
@@ -74,6 +78,35 @@ func (c *Client) CreateCampaign(req CreateCampaignRequest) (*CampaignCreateRespo
 	}
 
 	var result CampaignCreateResponse
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	return &result, nil
+}
+
+func (c *Client) UpdateCampaign(id string, req UpdateCampaignRequest) (*Campaign, error) {
+	b, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode request: %w", err)
+	}
+
+	httpReq, err := c.newRequest(http.MethodPost, "/campaigns/"+id, bytes.NewReader(b))
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := c.do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errorFromResponse(resp)
+	}
+
+	var result Campaign
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}

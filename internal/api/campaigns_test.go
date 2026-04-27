@@ -154,6 +154,129 @@ func TestCreateCampaign_RequestBody(t *testing.T) {
 	}
 }
 
+const updateCampaignResponse = `{
+	"success": true,
+	"campaignId": "cmp_abc123",
+	"emailMessageId": "em_abc123",
+	"name": "Renamed",
+	"status": "Draft",
+	"createdAt": "2026-04-01T10:00:00Z",
+	"updatedAt": "2026-04-25T10:00:00Z"
+}`
+
+func TestUpdateCampaign(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+		body       string
+		wantAPIErr *APIError
+		wantErrMsg string
+	}{
+		{
+			name:       "success",
+			statusCode: http.StatusOK,
+			body:       updateCampaignResponse,
+		},
+		{
+			name:       "not found",
+			statusCode: http.StatusNotFound,
+			body:       `{"success":false,"message":"Campaign not found"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusNotFound, Message: "Campaign not found"},
+		},
+		{
+			name:       "not in draft",
+			statusCode: http.StatusConflict,
+			body:       `{"success":false,"message":"Campaign is not in draft status"}`,
+			wantAPIErr: &APIError{StatusCode: http.StatusConflict, Message: "Campaign is not in draft status"},
+		},
+		{
+			name:       "invalid json",
+			statusCode: http.StatusOK,
+			body:       `not json`,
+			wantErrMsg: "failed to decode response",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(tt.statusCode)
+				w.Write([]byte(tt.body))
+			}))
+			defer server.Close()
+
+			client := NewClient(server.URL, "test-key", false)
+			result, err := client.UpdateCampaign("cmp_abc123", UpdateCampaignRequest{Name: "Renamed"})
+
+			if tt.wantAPIErr != nil {
+				var apiErr *APIError
+				if !errors.As(err, &apiErr) {
+					t.Fatalf("expected *APIError, got %T: %v", err, err)
+				}
+				if apiErr.StatusCode != tt.wantAPIErr.StatusCode {
+					t.Errorf("StatusCode = %d, want %d", apiErr.StatusCode, tt.wantAPIErr.StatusCode)
+				}
+				if apiErr.Message != tt.wantAPIErr.Message {
+					t.Errorf("Message = %q, want %q", apiErr.Message, tt.wantAPIErr.Message)
+				}
+				return
+			}
+
+			if tt.wantErrMsg != "" {
+				if err == nil {
+					t.Fatalf("expected error containing %q, got nil", tt.wantErrMsg)
+				}
+				if !strings.Contains(err.Error(), tt.wantErrMsg) {
+					t.Errorf("error = %q, want it to contain %q", err.Error(), tt.wantErrMsg)
+				}
+				return
+			}
+
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if result.CampaignID != "cmp_abc123" {
+				t.Errorf("CampaignID = %q, want cmp_abc123", result.CampaignID)
+			}
+			if result.Name != "Renamed" {
+				t.Errorf("Name = %q, want Renamed", result.Name)
+			}
+		})
+	}
+}
+
+func TestUpdateCampaign_RequestBodyAndPath(t *testing.T) {
+	var (
+		gotPath   string
+		gotMethod string
+		body      map[string]any
+	)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		gotMethod = r.Method
+		b, _ := io.ReadAll(r.Body)
+		json.Unmarshal(b, &body)
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(updateCampaignResponse))
+	}))
+	defer server.Close()
+
+	client := NewClient(server.URL, "test-key", false)
+	if _, err := client.UpdateCampaign("cmp_abc123", UpdateCampaignRequest{Name: "Renamed"}); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if gotMethod != http.MethodPost {
+		t.Errorf("method = %q, want POST", gotMethod)
+	}
+	if gotPath != "/campaigns/cmp_abc123" {
+		t.Errorf("path = %q, want /campaigns/cmp_abc123", gotPath)
+	}
+	if body["name"] != "Renamed" {
+		t.Errorf("name = %v, want Renamed", body["name"])
+	}
+}
+
 func TestGetCampaign(t *testing.T) {
 	body := `{
 		"success": true,
