@@ -11,6 +11,10 @@ var authListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List stored API keys",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := validatePickFlags(cmd); err != nil {
+			return err
+		}
+
 		entries, activeTeam, err := runAuthList()
 		if err != nil {
 			return err
@@ -34,13 +38,31 @@ var authListCmd = &cobra.Command{
 			return nil
 		}
 
-		t := newStyledTable(cmd.OutOrStdout(), "NAME", "ACTIVE", "API KEY")
+		headers := []string{"NAME", "ACTIVE", "API KEY"}
+		rows := make([][]string, 0, len(entries))
 		for _, e := range entries {
 			active := ""
 			if e.Name == activeTeam {
 				active = "*"
 			}
-			t.Row(e.Name, active, maskKey(e.APIKey))
+			rows = append(rows, []string{e.Name, active, maskKey(e.APIKey)})
+		}
+
+		if isPicking(cmd) {
+			out := cmd.OutOrStdout()
+			return runPicker(headers, rows, pickAction{OnSelect: func(rowIdx int) error {
+				name := entries[rowIdx].Name
+				if err := runAuthUse(name); err != nil {
+					return err
+				}
+				fmt.Fprintf(out, "Active team set to %q.\n", name)
+				return nil
+			}})
+		}
+
+		t := newStyledTable(cmd.OutOrStdout(), headers...)
+		for _, r := range rows {
+			t.Row(r...)
 		}
 		return t.Render()
 	},
@@ -59,5 +81,6 @@ func runAuthList() ([]config.KeyEntry, string, error) {
 }
 
 func init() {
+	addPickFlag(authListCmd)
 	authCmd.AddCommand(authListCmd)
 }
