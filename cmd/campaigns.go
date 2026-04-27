@@ -36,6 +36,10 @@ var campaignsListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List campaigns",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := validatePickFlags(cmd); err != nil {
+			return err
+		}
+
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
@@ -58,16 +62,26 @@ var campaignsListCmd = &cobra.Command{
 			return nil
 		}
 
-		t := newStyledTable(cmd.OutOrStdout(), "ID", "MESSAGE ID", "NAME", "STATUS", "SUBJECT", "UPDATED")
+		headers := []string{"ID", "MESSAGE ID", "NAME", "STATUS", "SUBJECT", "UPDATED"}
+		rows := make([][]string, 0, len(campaigns))
 		for _, c := range campaigns {
-			t.Row(
+			rows = append(rows, []string{
 				c.CampaignID,
 				deref(c.EmailMessageID),
 				c.Name,
 				c.Status,
 				c.Subject,
 				c.UpdatedAt,
-			)
+			})
+		}
+
+		if isPicking(cmd) {
+			return runPicker(headers, rows, copyColumnAction(rows, 0, "campaign ID", cmd.OutOrStdout()))
+		}
+
+		t := newStyledTable(cmd.OutOrStdout(), headers...)
+		for _, r := range rows {
+			t.Row(r...)
 		}
 		return t.Render()
 	},
@@ -172,6 +186,7 @@ var campaignsGetCmd = &cobra.Command{
 
 func init() {
 	addPaginationFlags(campaignsListCmd)
+	addPickFlag(campaignsListCmd)
 	campaignsCmd.AddCommand(campaignsListCmd)
 	campaignsCmd.AddCommand(campaignsGetCmd)
 

@@ -80,6 +80,10 @@ var transactionalListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List published transactional emails",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := validatePickFlags(cmd); err != nil {
+			return err
+		}
+
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
@@ -103,9 +107,19 @@ var transactionalListCmd = &cobra.Command{
 			return nil
 		}
 
-		t := newStyledTable(cmd.OutOrStdout(), "ID", "NAME", "LAST UPDATED", "VARIABLES")
+		headers := []string{"ID", "NAME", "LAST UPDATED", "VARIABLES"}
+		rows := make([][]string, 0, len(emails))
 		for _, e := range emails {
-			t.Row(e.ID, e.Name, e.LastUpdated, strings.Join(e.DataVariables, ", "))
+			rows = append(rows, []string{e.ID, e.Name, e.LastUpdated, strings.Join(e.DataVariables, ", ")})
+		}
+
+		if isPicking(cmd) {
+			return runPicker(headers, rows, copyColumnAction(rows, 0, "transactional ID", cmd.OutOrStdout()))
+		}
+
+		t := newStyledTable(cmd.OutOrStdout(), headers...)
+		for _, r := range rows {
+			t.Row(r...)
 		}
 		return t.Render()
 	},
@@ -181,6 +195,7 @@ var transactionalSendCmd = &cobra.Command{
 
 func init() {
 	addPaginationFlags(transactionalListCmd)
+	addPickFlag(transactionalListCmd)
 	transactionalCmd.AddCommand(transactionalListCmd)
 
 	addTransactionalSendFlags(transactionalSendCmd)

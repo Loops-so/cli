@@ -25,6 +25,10 @@ var contactPropertiesListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List contact properties",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := validatePickFlags(cmd); err != nil {
+			return err
+		}
+
 		customOnly, _ := cmd.Flags().GetBool("custom")
 
 		cfg, err := loadConfig()
@@ -49,9 +53,19 @@ var contactPropertiesListCmd = &cobra.Command{
 			return nil
 		}
 
-		t := newStyledTable(cmd.OutOrStdout(), "KEY", "LABEL", "TYPE")
+		headers := []string{"KEY", "LABEL", "TYPE"}
+		rows := make([][]string, 0, len(props))
 		for _, p := range props {
-			t.Row(p.Key, p.Label, p.Type)
+			rows = append(rows, []string{p.Key, p.Label, p.Type})
+		}
+
+		if isPicking(cmd) {
+			return runPicker(headers, rows, copyColumnAction(rows, 0, "property key", cmd.OutOrStdout()))
+		}
+
+		t := newStyledTable(cmd.OutOrStdout(), headers...)
+		for _, r := range rows {
+			t.Row(r...)
 		}
 		return t.Render()
 	},
@@ -83,6 +97,7 @@ var contactPropertiesCreateCmd = &cobra.Command{
 
 func init() {
 	contactPropertiesListCmd.Flags().Bool("custom", false, "Only list custom properties")
+	addPickFlag(contactPropertiesListCmd)
 	contactPropertiesCmd.AddCommand(contactPropertiesListCmd)
 
 	contactPropertiesCreateCmd.Flags().String("name", "", "Property name (camelCase, e.g. planName)")
