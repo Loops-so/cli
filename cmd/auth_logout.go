@@ -8,31 +8,30 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var logoutName string
-
 var logoutCmd = &cobra.Command{
-	Use:   "logout",
+	Use:   "logout <name>",
 	Short: "Remove stored Loops credentials",
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if logoutName == "" {
-			return errors.New("use --name to specify which key to remove (e.g. loops auth logout --name loops-prod)")
-		}
-		if err := runAuthLogout(logoutName); err != nil {
+		name := args[0]
+		if err := runAuthLogout(name); err != nil {
 			return err
 		}
 		if isJSONOutput() {
 			return printJSON(cmd.OutOrStdout(), Result{Success: true})
 		}
-		fmt.Fprintf(cmd.OutOrStdout(), "Logged out of %q.\n", logoutName)
+		fmt.Fprintf(cmd.OutOrStdout(), "Logged out of %q.\n", name)
 		return nil
 	},
 }
 
 func runAuthLogout(name string) error {
+	if name == "" {
+		return errors.New("a key name is required")
+	}
 	return config.Delete(name)
 }
 
 func init() {
-	logoutCmd.Flags().StringVarP(&logoutName, "name", "n", "", "Name of the API key to remove")
 	authCmd.AddCommand(logoutCmd)
 }
