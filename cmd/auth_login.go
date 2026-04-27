@@ -12,16 +12,14 @@ import (
 	"golang.org/x/term"
 )
 
-var loginName string
 var loginSkipVerify bool
 
 var loginCmd = &cobra.Command{
-	Use:   "login",
+	Use:   "login <name>",
 	Short: "Authenticate with your Loops API key",
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if loginName == "" {
-			return errors.New("use --name to give this key a name (e.g. loops auth login --name my-team)")
-		}
+		name := args[0]
 
 		fmt.Fprint(os.Stderr, "Enter your API key: ")
 		raw, err := term.ReadPassword(int(os.Stdin.Fd()))
@@ -35,22 +33,22 @@ var loginCmd = &cobra.Command{
 			return fmt.Errorf("API key cannot be empty")
 		}
 
-		result, err := runAuthLogin(apiKey, loginName, loginSkipVerify)
+		result, err := runAuthLogin(apiKey, name, loginSkipVerify)
 		if err != nil {
 			return err
 		}
 
 		if isJSONOutput() {
-			msg := fmt.Sprintf("API key saved as %q", loginName)
+			msg := fmt.Sprintf("API key saved as %q", name)
 			if result != nil {
 				msg = fmt.Sprintf("Authenticated as team: %s", result.TeamName)
 			}
 			return printJSON(cmd.OutOrStdout(), Result{Success: true, Message: msg})
 		}
 		if result != nil {
-			fmt.Fprintf(cmd.OutOrStdout(), "API key saved as %q. Authenticated as team: %s\n", loginName, result.TeamName)
+			fmt.Fprintf(cmd.OutOrStdout(), "API key saved as %q. Authenticated as team: %s\n", name, result.TeamName)
 		} else {
-			fmt.Fprintf(cmd.OutOrStdout(), "API key saved as %q.\n", loginName)
+			fmt.Fprintf(cmd.OutOrStdout(), "API key saved as %q.\n", name)
 		}
 		return nil
 	},
@@ -58,7 +56,7 @@ var loginCmd = &cobra.Command{
 
 func runAuthLogin(apiKey, name string, skipVerify bool) (*api.APIKeyResponse, error) {
 	if name == "" {
-		return nil, errors.New("use --name to give this key a name")
+		return nil, errors.New("a key name is required")
 	}
 	if skipVerify {
 		if err := config.Save(apiKey, name); err != nil {
@@ -77,7 +75,6 @@ func runAuthLogin(apiKey, name string, skipVerify bool) (*api.APIKeyResponse, er
 }
 
 func init() {
-	loginCmd.Flags().StringVarP(&loginName, "name", "n", "", "Name for this API key (e.g. my-team)")
 	loginCmd.Flags().BoolVar(&loginSkipVerify, "skip-verify", false, "Save the API key without verifying it")
 	authCmd.AddCommand(loginCmd)
 }

@@ -44,8 +44,9 @@ var eventsCmd = &cobra.Command{
 }
 
 var eventsSendCmd = &cobra.Command{
-	Use:   "send",
+	Use:   "send <event>",
 	Short: "Send an event",
+	Args:  cobra.ExactArgs(1),
 	RunE:  eventsSendRunE,
 }
 
@@ -61,7 +62,7 @@ func eventsSendRunE(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("at least one of --email or --user-id is required")
 	}
 
-	eventName, _ := cmd.Flags().GetString("event")
+	eventName := args[0]
 	idempotencyKey, _ := cmd.Flags().GetString("idempotency-key")
 
 	req := api.SendEventRequest{
@@ -112,14 +113,12 @@ func eventsSendRunE(cmd *cobra.Command, args []string) error {
 }
 
 func addEventsSendFlags(cmd *cobra.Command) {
-	cmd.Flags().String("event", "", "Event name")
 	cmd.Flags().String("email", "", "Contact email address")
 	cmd.Flags().String("user-id", "", "Contact user ID")
 	cmd.Flags().String("props", "", "Path to a JSON file of event properties")
 	cmd.Flags().String("contact-props", "", "Path to a JSON file of contact properties")
 	cmd.Flags().StringArray("list", nil, "Mailing list subscription as id=true|false (repeatable)")
 	cmd.Flags().String("idempotency-key", "", "Idempotency key to prevent duplicate sends")
-	cmd.MarkFlagRequired("event")
 }
 
 func init() {
