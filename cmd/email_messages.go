@@ -100,8 +100,9 @@ func resolveExpectedRevisionID(cfg *config.Config, id, supplied string) (string,
 }
 
 var emailMessagesCmd = &cobra.Command{
-	Use:   "email-messages",
-	Short: "Manage email messages",
+	Use:    "email-messages",
+	Short:  "Manage email messages",
+	Hidden: true,
 }
 
 var emailMessagesGetCmd = &cobra.Command{
