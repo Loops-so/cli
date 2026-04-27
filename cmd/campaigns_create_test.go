@@ -15,18 +15,8 @@ func TestRunCampaignsCreate(t *testing.T) {
 		"status": "Draft",
 		"createdAt": "2026-04-20T10:00:00Z",
 		"updatedAt": "2026-04-20T10:00:00Z",
-		"emailMessage": {
-			"emailMessageId": "em_new",
-			"campaignId": "cmp_new",
-			"subject": "Hello",
-			"previewText": "",
-			"fromName": "",
-			"fromEmail": "",
-			"replyToEmail": "",
-			"lmx": "",
-			"contentRevisionId": "rev_1",
-			"updatedAt": "2026-04-20T10:00:00Z"
-		}
+		"emailMessageId": "em_new",
+		"emailMessageContentRevisionId": "rev_1"
 	}`
 
 	t.Run("returns response on success", func(t *testing.T) {
@@ -38,8 +28,11 @@ func TestRunCampaignsCreate(t *testing.T) {
 		if resp.CampaignID != "cmp_new" {
 			t.Errorf("CampaignID = %q, want cmp_new", resp.CampaignID)
 		}
-		if resp.EmailMessage == nil || resp.EmailMessage.EmailMessageID != "em_new" {
-			t.Errorf("EmailMessage = %v, want em_new", resp.EmailMessage)
+		if deref(resp.EmailMessageID) != "em_new" {
+			t.Errorf("EmailMessageID = %q, want em_new", deref(resp.EmailMessageID))
+		}
+		if deref(resp.EmailMessageContentRevisionID) != "rev_1" {
+			t.Errorf("EmailMessageContentRevisionID = %q, want rev_1", deref(resp.EmailMessageContentRevisionID))
 		}
 	})
 
@@ -50,24 +43,4 @@ func TestRunCampaignsCreate(t *testing.T) {
 			t.Fatal("expected error, got nil")
 		}
 	})
-}
-
-func TestFromEmailUsername(t *testing.T) {
-	tests := []struct {
-		in   string
-		want string
-	}{
-		{"hello", "hello"},
-		{"hello@acme.com", "hello"},
-		{"hello@", "hello"},
-		{"", ""},
-		{"@acme.com", ""},
-	}
-	for _, tt := range tests {
-		t.Run(tt.in, func(t *testing.T) {
-			if got := fromEmailUsername(tt.in); got != tt.want {
-				t.Errorf("fromEmailUsername(%q) = %q, want %q", tt.in, got, tt.want)
-			}
-		})
-	}
 }
