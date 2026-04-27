@@ -101,6 +101,44 @@ var campaignsCreateCmd = &cobra.Command{
 	},
 }
 
+func runCampaignsUpdate(cfg *config.Config, id string, req api.UpdateCampaignRequest) (*api.Campaign, error) {
+	return newAPIClient(cfg).UpdateCampaign(id, req)
+}
+
+var campaignsUpdateCmd = &cobra.Command{
+	Use:   "update <id>",
+	Short: "Update a draft campaign",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		name, _ := cmd.Flags().GetString("name")
+
+		cfg, err := loadConfig()
+		if err != nil {
+			return err
+		}
+
+		c, err := runCampaignsUpdate(cfg, args[0], api.UpdateCampaignRequest{Name: name})
+		if err != nil {
+			return err
+		}
+
+		if isJSONOutput() {
+			return printJSON(cmd.OutOrStdout(), c)
+		}
+
+		fmt.Fprintf(cmd.OutOrStdout(), "Updated. (id: %s)\n\n", c.CampaignID)
+
+		t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
+		t.Row("campaignId", c.CampaignID)
+		t.Row("emailMessageId", deref(c.EmailMessageID))
+		t.Row("name", c.Name)
+		t.Row("status", c.Status)
+		t.Row("createdAt", c.CreatedAt)
+		t.Row("updatedAt", c.UpdatedAt)
+		return t.Render()
+	},
+}
+
 var campaignsGetCmd = &cobra.Command{
 	Use:   "get <id>",
 	Short: "Get a campaign",
@@ -139,6 +177,10 @@ func init() {
 	campaignsCreateCmd.Flags().StringP("name", "n", "", "Campaign name (required)")
 	campaignsCreateCmd.MarkFlagRequired("name")
 	campaignsCmd.AddCommand(campaignsCreateCmd)
+
+	campaignsUpdateCmd.Flags().StringP("name", "n", "", "Campaign name (required)")
+	campaignsUpdateCmd.MarkFlagRequired("name")
+	campaignsCmd.AddCommand(campaignsUpdateCmd)
 
 	rootCmd.AddCommand(campaignsCmd)
 }
