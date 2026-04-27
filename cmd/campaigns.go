@@ -27,8 +27,9 @@ func runCampaignsList(cfg *config.Config, params api.PaginationParams) ([]api.Ca
 }
 
 var campaignsCmd = &cobra.Command{
-	Use:   "campaigns",
-	Short: "Manage campaigns",
+	Use:    "campaigns",
+	Short:  "Manage campaigns",
+	Hidden: true,
 }
 
 var campaignsListCmd = &cobra.Command{
