@@ -19,6 +19,7 @@ tasks:
 
   build:
     desc: build the cli
+    aliases: [b]
     deps:
       - deps
     cmds:
@@ -26,11 +27,13 @@ tasks:
 
   test:
     desc: run tests
+    aliases: [t]
     cmds:
       - go test ./... -cover
 
   vuln:
     desc: run govulncheck
+    aliases: [v]
     cmds:
       - go tool govulncheck {{.CLI_ARGS}} ./...
 
