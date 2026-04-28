@@ -1,10 +1,16 @@
 package cmd
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
+	"github.com/alecthomas/chroma/v2"
+	"github.com/alecthomas/chroma/v2/formatters"
+	"github.com/alecthomas/chroma/v2/lexers"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/loops-so/cli/internal/api"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
@@ -198,9 +204,41 @@ func printEmailMessage(cmd *cobra.Command, msg *api.EmailMessage) error {
 	}
 
 	fmt.Fprintln(cmd.OutOrStdout())
-	fmt.Fprintln(cmd.OutOrStdout(), "LMX:")
-	fmt.Fprintln(cmd.OutOrStdout(), msg.LMX)
-	return nil
+	return renderLMX(cmd.OutOrStdout(), msg.LMX)
+}
+
+// renderLMX prints the LMX body with chroma syntax highlighting via the xml
+// lexer (LMX is JSX/XML-tag-shaped). The chroma style maps two token kinds to
+// fang.ColorScheme colors so highlighting reuses the same palette as the rest
+// of the CLI's output.
+func renderLMX(out io.Writer, lmx string) error {
+	lexer := lexers.Get("xml")
+	if lexer == nil {
+		lexer = lexers.Fallback
+	}
+	iterator, err := lexer.Tokenise(nil, lmx)
+	if err != nil {
+		return err
+	}
+	formatter := formatters.Get("terminal256")
+	if formatter == nil {
+		formatter = formatters.Fallback
+	}
+	var buf bytes.Buffer
+	if err := formatter.Format(&buf, lmxChromaStyle(), iterator); err != nil {
+		return err
+	}
+	cw := colorprofile.NewWriter(out, os.Environ())
+	_, err = fmt.Fprint(cw, buf.String())
+	return err
+}
+
+func lmxChromaStyle() *chroma.Style {
+	cs := fangColorScheme()
+	return chroma.MustNewStyle("lmx", chroma.StyleEntries{
+		chroma.NameTag:       hexColor(cs.Program),
+		chroma.LiteralString: hexColor(cs.QuotedString),
+	})
 }
 
 func printLmxWarnings(cmd *cobra.Command, warnings []api.LmxWarning) {
