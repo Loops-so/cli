@@ -229,7 +229,7 @@ func renderLMX(out io.Writer, lmx string) error {
 		return err
 	}
 	cw := colorprofile.NewWriter(out, os.Environ())
-	_, err = fmt.Fprint(cw, buf.String())
+	_, err = fmt.Fprintln(cw, strings.TrimRight(buf.String(), "\n"))
 	return err
 }
 
