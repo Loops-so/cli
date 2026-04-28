@@ -61,6 +61,7 @@ func buildPickerInput(headers []string, rows [][]string) ([]byte, error) {
 
 	var out bytes.Buffer
 	for i := range pickerHeaderLines {
+		out.WriteByte('\t')
 		out.WriteString(lines[i])
 		out.WriteByte('\n')
 	}
@@ -128,10 +129,12 @@ func runPicker(headers []string, rows [][]string, bindings []pickBinding) error 
 
 	args := []string{
 		"--ansi",
+		"--layout", "reverse-list",
 		"--header-lines", strconv.Itoa(pickerHeaderLines),
 		"--delimiter", "\t",
 		"--with-nth", "2..",
 		"--header", renderPickerHeader(bindings),
+		"--header-first",
 	}
 
 	expect := make([]string, 0, len(bindings)-1)

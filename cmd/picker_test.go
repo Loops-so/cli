@@ -66,6 +66,19 @@ func TestBuildPickerInput(t *testing.T) {
 		}
 	}
 
+	// header lines must start with "\t" so fzf's --with-nth 2.. still
+	// displays the rendered header text (the empty field before the tab
+	// is what gets stripped).
+	for i := range pickerHeaderLines {
+		if !strings.HasPrefix(lines[i], "\t") {
+			t.Errorf("header line %d (%q) missing leading tab", i, lines[i])
+			continue
+		}
+		if rest := strings.TrimPrefix(lines[i], "\t"); rest == "" {
+			t.Errorf("header line %d has empty content after leading tab", i)
+		}
+	}
+
 	// data lines must round-trip and the index must match position
 	for dataIdx, line := range lines[pickerHeaderLines:] {
 		idx, err := parsePickerSelection(line, len(rows))
