@@ -106,6 +106,24 @@ func parsePickerOutput(s string, numRows int) (key string, rowIdx int, err error
 	return keyLine, rowIdx, nil
 }
 
+// build an fzf --color spec that matches the CLI's fang color scheme:
+// the table column header color is reused for accents (prompt, pointer,
+// matches, etc.) and the comment color for info text. base scheme
+// follows the detected terminal background.
+func pickerColorSpec() string {
+	cs := fangColorScheme()
+	base := "dark"
+	if !isDarkBackground() {
+		base = "light"
+	}
+	accent := hexColor(cs.Title)
+	dim := hexColor(cs.Comment)
+	return fmt.Sprintf(
+		"%s,header:%s,prompt:%s,pointer:%s,marker:%s,spinner:%s,hl:%s,hl+:%s,info:%s",
+		base, accent, accent, accent, accent, accent, accent, accent, dim,
+	)
+}
+
 func renderPickerHeader(bindings []pickBinding) string {
 	parts := make([]string, len(bindings))
 	for i, b := range bindings {
@@ -135,6 +153,7 @@ func runPicker(headers []string, rows [][]string, bindings []pickBinding) error 
 		"--with-nth", "2..",
 		"--header", renderPickerHeader(bindings),
 		"--header-first",
+		"--color", pickerColorSpec(),
 	}
 
 	expect := make([]string, 0, len(bindings)-1)
