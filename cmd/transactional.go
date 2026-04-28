@@ -114,7 +114,9 @@ var transactionalListCmd = &cobra.Command{
 		}
 
 		if isPicking(cmd) {
-			return runPicker(headers, rows, copyColumnAction(rows, 0, "transactional ID", cmd.OutOrStdout()))
+			return runPicker(headers, rows, []pickBinding{
+				copyColumnBinding("enter", "copy id", "transactional ID", rows, 0, cmd.OutOrStdout()),
+			})
 		}
 
 		t := newStyledTable(cmd.OutOrStdout(), headers...)

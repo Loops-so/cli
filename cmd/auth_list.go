@@ -50,13 +50,17 @@ var authListCmd = &cobra.Command{
 
 		if isPicking(cmd) {
 			out := cmd.OutOrStdout()
-			return runPicker(headers, rows, pickAction{OnSelect: func(rowIdx int) error {
-				name := entries[rowIdx].Name
-				if err := runAuthUse(name); err != nil {
-					return err
-				}
-				fmt.Fprintf(out, "Active team set to %q.\n", name)
-				return nil
+			return runPicker(headers, rows, []pickBinding{{
+				Key:   "enter",
+				Label: "switch team",
+				Action: func(rowIdx int) error {
+					name := entries[rowIdx].Name
+					if err := runAuthUse(name); err != nil {
+						return err
+					}
+					fmt.Fprintf(out, "Active team set to %q.\n", name)
+					return nil
+				},
 			}})
 		}
 

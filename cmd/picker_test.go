@@ -85,6 +85,77 @@ func TestBuildPickerInputEmpty(t *testing.T) {
 	}
 }
 
+func TestParsePickerOutput(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		numRows int
+		wantKey string
+		wantIdx int
+		wantErr bool
+	}{
+		{name: "default key", input: "\n0\tfoo\n", numRows: 3, wantKey: "", wantIdx: 0},
+		{name: "named key", input: "alt-enter\n2\trow\n", numRows: 5, wantKey: "alt-enter", wantIdx: 2},
+		{name: "no trailing newline", input: "alt-enter\n1\tx", numRows: 3, wantKey: "alt-enter", wantIdx: 1},
+		{name: "single line", input: "0\tfoo\n", numRows: 3, wantErr: true},
+		{name: "empty", input: "", numRows: 3, wantErr: true},
+		{name: "bad row", input: "alt-enter\nbad\n", numRows: 3, wantErr: true},
+		{name: "row out of range", input: "alt-enter\n9\tx\n", numRows: 3, wantErr: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			gotKey, gotIdx, err := parsePickerOutput(tc.input, tc.numRows)
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("parsePickerOutput(%q, %d) error = %v, wantErr = %v", tc.input, tc.numRows, err, tc.wantErr)
+			}
+			if tc.wantErr {
+				return
+			}
+			if gotKey != tc.wantKey || gotIdx != tc.wantIdx {
+				t.Fatalf("parsePickerOutput(%q, %d) = (%q, %d), want (%q, %d)", tc.input, tc.numRows, gotKey, gotIdx, tc.wantKey, tc.wantIdx)
+			}
+		})
+	}
+}
+
+func TestRenderPickerHeader(t *testing.T) {
+	tests := []struct {
+		name     string
+		bindings []pickBinding
+		want     string
+	}{
+		{
+			name:     "single",
+			bindings: []pickBinding{{Key: "enter", Label: "id"}},
+			want:     " enter ▶ id ",
+		},
+		{
+			name: "two",
+			bindings: []pickBinding{
+				{Key: "enter", Label: "id"},
+				{Key: "alt-enter", Label: "messageId"},
+			},
+			want: " enter ▶ id   alt-enter ▶ messageId ",
+		},
+		{
+			name: "three",
+			bindings: []pickBinding{
+				{Key: "enter", Label: "id"},
+				{Key: "alt-enter", Label: "messageId"},
+				{Key: "ctrl-y", Label: "name"},
+			},
+			want: " enter ▶ id   alt-enter ▶ messageId   ctrl-y ▶ name ",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := renderPickerHeader(tc.bindings); got != tc.want {
+				t.Fatalf("renderPickerHeader = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestValidatePickFlags(t *testing.T) {
 	saved := outputFormat
 	t.Cleanup(func() { outputFormat = saved })

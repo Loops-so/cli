@@ -14,9 +14,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// pickerHeaderLines is the number of leading lines in the rendered styled
-// table that fzf should treat as headers (header text + the BorderHeader
-// separator emitted by newStyledTable).
 const pickerHeaderLines = 2
 
 func addPickFlag(cmd *cobra.Command) {
@@ -36,11 +33,15 @@ func validatePickFlags(cmd *cobra.Command) error {
 	return nil
 }
 
-type pickAction struct {
-	OnSelect func(rowIdx int) error
+// pickBinding is a single key → action mapping inside the picker. the first
+// binding passed to runPicker is the default (key must be "enter").
+type pickBinding struct {
+	Key    string
+	Label  string
+	Action func(rowIdx int) error
 }
 
-// render the styled table for headers/rows and prefixes each data line
+// render the styled table for headers/rows and prefix each data line
 // with "<idx>\t" so fzf can identify the original row regardless of
 // filtering/reordering. header lines pass through unchanged.
 func buildPickerInput(headers []string, rows [][]string) ([]byte, error) {
@@ -69,8 +70,7 @@ func buildPickerInput(headers []string, rows [][]string) ([]byte, error) {
 	return out.Bytes(), nil
 }
 
-// parsePickerSelection parses a single fzf selection line of the form
-// "<rowIdx>\t<rendered_row>" and validates the index against numRows.
+// parse a single fzf row line of "<rowIdx>\t<rendered_row>" and validate idx.
 func parsePickerSelection(s string, numRows int) (int, error) {
 	s = strings.TrimRight(s, "\n")
 	if s == "" {
@@ -90,7 +90,33 @@ func parsePickerSelection(s string, numRows int) (int, error) {
 	return idx, nil
 }
 
-func runPicker(headers []string, rows [][]string, action pickAction) error {
+// parse fzf --expect output: first line is the pressed key (empty for the
+// default Enter), second line is the row prefixed by buildPickerInput.
+func parsePickerOutput(s string, numRows int) (key string, rowIdx int, err error) {
+	s = strings.TrimRight(s, "\n")
+	keyLine, rowLine, ok := strings.Cut(s, "\n")
+	if !ok {
+		return "", 0, errors.New("unexpected fzf output format")
+	}
+	rowIdx, err = parsePickerSelection(rowLine, numRows)
+	if err != nil {
+		return "", 0, err
+	}
+	return keyLine, rowIdx, nil
+}
+
+func renderPickerHeader(bindings []pickBinding) string {
+	parts := make([]string, len(bindings))
+	for i, b := range bindings {
+		parts[i] = fmt.Sprintf("%s ▶ %s", b.Key, b.Label)
+	}
+	return " " + strings.Join(parts, "   ") + " "
+}
+
+func runPicker(headers []string, rows [][]string, bindings []pickBinding) error {
+	if len(bindings) == 0 {
+		return errors.New("runPicker: at least one binding required")
+	}
 	if _, err := exec.LookPath("fzf"); err != nil {
 		return errors.New("--pick requires fzf to be installed and on PATH")
 	}
@@ -100,12 +126,23 @@ func runPicker(headers []string, rows [][]string, action pickAction) error {
 		return err
 	}
 
-	fzf := exec.Command("fzf",
+	args := []string{
 		"--ansi",
 		"--header-lines", strconv.Itoa(pickerHeaderLines),
 		"--delimiter", "\t",
 		"--with-nth", "2..",
-	)
+		"--header", renderPickerHeader(bindings),
+	}
+
+	expect := make([]string, 0, len(bindings)-1)
+	for _, b := range bindings[1:] {
+		expect = append(expect, b.Key)
+	}
+	if len(expect) > 0 {
+		args = append(args, "--expect", strings.Join(expect, ","))
+	}
+
+	fzf := exec.Command("fzf", args...)
 	fzf.Stdin = bytes.NewReader(input)
 	fzf.Stderr = os.Stderr
 	selBytes, err := fzf.Output()
@@ -119,23 +156,41 @@ func runPicker(headers []string, rows [][]string, action pickAction) error {
 		return fmt.Errorf("fzf: %w", err)
 	}
 
-	if strings.TrimRight(string(selBytes), "\n") == "" {
+	output := string(selBytes)
+	if strings.TrimRight(output, "\n") == "" {
 		return nil
 	}
-	rowIdx, err := parsePickerSelection(string(selBytes), len(rows))
+
+	var key string
+	var rowIdx int
+	if len(expect) == 0 {
+		rowIdx, err = parsePickerSelection(output, len(rows))
+	} else {
+		key, rowIdx, err = parsePickerOutput(output, len(rows))
+	}
 	if err != nil {
 		return err
 	}
-	return action.OnSelect(rowIdx)
+
+	for _, b := range bindings {
+		if (key == "" && b.Key == "enter") || b.Key == key {
+			return b.Action(rowIdx)
+		}
+	}
+	return fmt.Errorf("no binding for key %q", key)
 }
 
-func copyColumnAction(rows [][]string, col int, label string, out io.Writer) pickAction {
-	return pickAction{OnSelect: func(rowIdx int) error {
-		v := rows[rowIdx][col]
-		if err := clipboard.WriteAll(v); err != nil {
-			return fmt.Errorf("failed to copy to clipboard: %w", err)
-		}
-		fmt.Fprintf(out, "Copied %s: %s\n", label, v)
-		return nil
-	}}
+func copyColumnBinding(key, headerLabel, copyLabel string, rows [][]string, col int, out io.Writer) pickBinding {
+	return pickBinding{
+		Key:   key,
+		Label: headerLabel,
+		Action: func(rowIdx int) error {
+			v := rows[rowIdx][col]
+			if err := clipboard.WriteAll(v); err != nil {
+				return fmt.Errorf("failed to copy to clipboard: %w", err)
+			}
+			fmt.Fprintf(out, "Copied %s: %s\n", copyLabel, v)
+			return nil
+		},
+	}
 }

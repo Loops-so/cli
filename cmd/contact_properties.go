@@ -60,7 +60,9 @@ var contactPropertiesListCmd = &cobra.Command{
 		}
 
 		if isPicking(cmd) {
-			return runPicker(headers, rows, copyColumnAction(rows, 0, "property key", cmd.OutOrStdout()))
+			return runPicker(headers, rows, []pickBinding{
+				copyColumnBinding("enter", "copy key", "property key", rows, 0, cmd.OutOrStdout()),
+			})
 		}
 
 		t := newStyledTable(cmd.OutOrStdout(), headers...)

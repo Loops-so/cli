@@ -76,7 +76,11 @@ var campaignsListCmd = &cobra.Command{
 		}
 
 		if isPicking(cmd) {
-			return runPicker(headers, rows, copyColumnAction(rows, 0, "campaign ID", cmd.OutOrStdout()))
+			out := cmd.OutOrStdout()
+			return runPicker(headers, rows, []pickBinding{
+				copyColumnBinding("enter", "copy id", "campaign ID", rows, 0, out),
+				copyColumnBinding("alt-enter", "copy messageId", "message ID", rows, 1, out),
+			})
 		}
 
 		t := newStyledTable(cmd.OutOrStdout(), headers...)
