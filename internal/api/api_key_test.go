@@ -51,7 +51,7 @@ func TestGetAPIKey(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			result, err := client.GetAPIKey()
 
 			if tt.wantAPIErr != nil {

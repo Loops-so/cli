@@ -88,7 +88,7 @@ func TestCreateCampaign(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			resp, err := client.CreateCampaign(CreateCampaignRequest{Name: "Spring Launch"})
 
 			if tt.wantAPIErr != nil {
@@ -141,7 +141,7 @@ func TestCreateCampaign_RequestBody(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(server.URL, "test-key", false)
+	client := NewClient("test-key", WithBaseURL(server.URL))
 	if _, err := client.CreateCampaign(CreateCampaignRequest{Name: "Spring"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -205,7 +205,7 @@ func TestUpdateCampaign(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			result, err := client.UpdateCampaign("cmp_abc123", UpdateCampaignRequest{Name: "Renamed"})
 
 			if tt.wantAPIErr != nil {
@@ -261,7 +261,7 @@ func TestUpdateCampaign_RequestBodyAndPath(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(server.URL, "test-key", false)
+	client := NewClient("test-key", WithBaseURL(server.URL))
 	if _, err := client.UpdateCampaign("cmp_abc123", UpdateCampaignRequest{Name: "Renamed"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -337,7 +337,7 @@ func TestGetCampaign(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			result, err := client.GetCampaign(tt.id)
 
 			if tt.wantAPIErr != nil {
@@ -429,7 +429,7 @@ func TestListCampaigns(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			campaigns, pagination, err := client.ListCampaigns(PaginationParams{})
 
 			if tt.wantAPIErr != nil {
@@ -476,7 +476,7 @@ func TestListCampaigns_ResponseData(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(server.URL, "test-key", false)
+	client := NewClient("test-key", WithBaseURL(server.URL))
 	campaigns, _, err := client.ListCampaigns(PaginationParams{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -526,7 +526,7 @@ func TestListCampaigns_QueryParams(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			client.ListCampaigns(tt.params)
 
 			if gotPerPage != tt.wantPerPage {

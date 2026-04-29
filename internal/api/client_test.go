@@ -29,7 +29,7 @@ func TestDo_RetryResetsBody(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client := NewClient(server.URL, "test-key", false)
+	client := NewClient("test-key", WithBaseURL(server.URL))
 	req, _ := client.newRequest(http.MethodPost, "/", bytes.NewReader([]byte(`{"hello":"world"}`)))
 	resp, err := client.do(req)
 	if err != nil {
@@ -48,7 +48,7 @@ func TestDo_RetryResetsBody(t *testing.T) {
 }
 
 func TestNewRequest(t *testing.T) {
-	client := NewClient("https://example.com/api/v1", "test-key", false)
+	client := NewClient("test-key", WithBaseURL("https://example.com/api/v1"))
 
 	tests := []struct {
 		name   string
@@ -88,7 +88,7 @@ func TestNewRequest(t *testing.T) {
 }
 
 func TestWithUserAgent(t *testing.T) {
-	client := NewClient("https://example.com/api/v1", "test-key", false).WithUserAgent("loops-cli/1.2.3")
+	client := NewClient("test-key", WithBaseURL("https://example.com/api/v1"), WithUserAgent("loops-cli/1.2.3"))
 	req, err := client.newRequest(http.MethodGet, "/api-key", nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -99,7 +99,7 @@ func TestWithUserAgent(t *testing.T) {
 }
 
 func TestNewRequest_InvalidURL(t *testing.T) {
-	client := NewClient("://bad-url", "test-key", false)
+	client := NewClient("test-key", WithBaseURL("://bad-url"))
 	_, err := client.newRequest(http.MethodGet, "/path", nil)
 	if err == nil {
 		t.Error("expected error for invalid URL, got nil")
@@ -221,7 +221,7 @@ func TestDo_Retries(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			req, _ := client.newRequest(http.MethodGet, "/", nil)
 			resp, err := client.do(req)
 			if err != nil {
