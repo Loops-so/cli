@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 )
 
 func TestRunAuthLogin(t *testing.T) {
@@ -15,7 +15,7 @@ func TestRunAuthLogin(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		want := &api.APIKeyResponse{TeamName: "Acme"}
+		want := &loops.APIKeyResponse{TeamName: "Acme"}
 		if !reflect.DeepEqual(result, want) {
 			t.Errorf("got %+v, want %+v", result, want)
 		}

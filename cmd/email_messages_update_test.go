@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/spf13/cobra"
 	"github.com/zalando/go-keyring"
 )
@@ -29,8 +29,8 @@ func TestRunEmailMessagesUpdate(t *testing.T) {
 
 	t.Run("returns updated message", func(t *testing.T) {
 		serveJSON(t, http.StatusOK, body)
-		msg, err := runEmailMessagesUpdate(cfg(t), "em_abc123", api.UpdateEmailMessageRequest{
-			EmailMessageFields: api.EmailMessageFields{Subject: "Updated"},
+		msg, err := runEmailMessagesUpdate(cfg(t), "em_abc123", loops.UpdateEmailMessageRequest{
+			EmailMessageFields: loops.EmailMessageFields{Subject: "Updated"},
 			Set:                map[string]bool{"subject": true},
 		})
 		if err != nil {
@@ -46,8 +46,8 @@ func TestRunEmailMessagesUpdate(t *testing.T) {
 
 	t.Run("returns error on 409 revision mismatch", func(t *testing.T) {
 		serveJSON(t, http.StatusConflict, `{"success":false,"message":"Revision mismatch"}`)
-		_, err := runEmailMessagesUpdate(cfg(t), "em_abc123", api.UpdateEmailMessageRequest{
-			EmailMessageFields: api.EmailMessageFields{Subject: "Updated"},
+		_, err := runEmailMessagesUpdate(cfg(t), "em_abc123", loops.UpdateEmailMessageRequest{
+			EmailMessageFields: loops.EmailMessageFields{Subject: "Updated"},
 			Set:                map[string]bool{"subject": true},
 			ExpectedRevisionID: "rev_stale",
 		})

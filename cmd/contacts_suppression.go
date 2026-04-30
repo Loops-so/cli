@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -15,7 +15,7 @@ var contactsSuppressionCmd = &cobra.Command{
 
 // check
 
-func runContactsSuppressionCheck(cfg *config.Config, email, userID string) (*api.ContactSuppression, error) {
+func runContactsSuppressionCheck(cfg *config.Config, email, userID string) (*loops.ContactSuppression, error) {
 	return newAPIClient(cfg).CheckContactSuppression(email, userID)
 }
 
@@ -57,7 +57,7 @@ var contactsSuppressionCheckCmd = &cobra.Command{
 
 // remove
 
-func runContactsSuppressionRemove(cfg *config.Config, email, userID string) (*api.ContactSuppressionRemoval, error) {
+func runContactsSuppressionRemove(cfg *config.Config, email, userID string) (*loops.ContactSuppressionRemoval, error) {
 	return newAPIClient(cfg).RemoveContactSuppression(email, userID)
 }
 

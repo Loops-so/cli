@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"charm.land/fang/v2"
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -18,15 +18,15 @@ var outputFormat outputFlag = "text"
 var teamFlag string
 var debugFlag bool
 
-func newAPIClient(cfg *config.Config) *api.Client {
-	opts := []api.Option{
-		api.WithBaseURL(cfg.EndpointURL),
-		api.WithUserAgent("loops-cli/" + version),
+func newAPIClient(cfg *config.Config) *loops.Client {
+	opts := []loops.Option{
+		loops.WithBaseURL(cfg.EndpointURL),
+		loops.WithUserAgent("loops-cli/" + version),
 	}
 	if cfg.Debug {
-		opts = append(opts, api.WithLogger(os.Stderr))
+		opts = append(opts, loops.WithLogger(os.Stderr))
 	}
-	return api.NewClient(cfg.APIKey, opts...)
+	return loops.NewClient(cfg.APIKey, opts...)
 }
 
 func loadConfig() (*config.Config, error) {

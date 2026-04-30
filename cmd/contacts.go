@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/cmdutil"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
@@ -85,8 +85,8 @@ func contactFieldParamsFromCmd(cmd *cobra.Command) (contactFieldParams, error) {
 
 // find
 
-func runContactsFind(cfg *config.Config, email, userID string) ([]api.Contact, error) {
-	return newAPIClient(cfg).FindContacts(api.FindContactParams{
+func runContactsFind(cfg *config.Config, email, userID string) ([]loops.Contact, error) {
+	return newAPIClient(cfg).FindContacts(loops.FindContactParams{
 		Email:  email,
 		UserID: userID,
 	})
@@ -120,7 +120,7 @@ var contactsFindCmd = &cobra.Command{
 
 		if isJSONOutput() {
 			if contacts == nil {
-				contacts = []api.Contact{}
+				contacts = []loops.Contact{}
 			}
 			return printJSON(cmd.OutOrStdout(), contacts)
 		}
@@ -163,7 +163,7 @@ type contactCreateResult struct {
 	ID      string `json:"id"`
 }
 
-func runContactsCreate(cfg *config.Config, req api.CreateContactRequest) (string, error) {
+func runContactsCreate(cfg *config.Config, req loops.CreateContactRequest) (string, error) {
 	return newAPIClient(cfg).CreateContact(req)
 }
 
@@ -185,7 +185,7 @@ var contactsCreateCmd = &cobra.Command{
 			return err
 		}
 
-		id, err := runContactsCreate(cfg, api.CreateContactRequest{
+		id, err := runContactsCreate(cfg, loops.CreateContactRequest{
 			Email:             email,
 			FirstName:         fields.FirstName,
 			LastName:          fields.LastName,
@@ -210,7 +210,7 @@ var contactsCreateCmd = &cobra.Command{
 
 // update
 
-func runContactsUpdate(cfg *config.Config, req api.UpdateContactRequest) error {
+func runContactsUpdate(cfg *config.Config, req loops.UpdateContactRequest) error {
 	return newAPIClient(cfg).UpdateContact(req)
 }
 
@@ -235,7 +235,7 @@ var contactsUpdateCmd = &cobra.Command{
 			return err
 		}
 
-		if err := runContactsUpdate(cfg, api.UpdateContactRequest{
+		if err := runContactsUpdate(cfg, loops.UpdateContactRequest{
 			Email:             email,
 			UserID:            userID,
 			FirstName:         fields.FirstName,

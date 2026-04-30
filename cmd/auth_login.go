@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
@@ -54,7 +54,7 @@ var loginCmd = &cobra.Command{
 	},
 }
 
-func runAuthLogin(apiKey, name string, skipVerify bool) (*api.APIKeyResponse, error) {
+func runAuthLogin(apiKey, name string, skipVerify bool) (*loops.APIKeyResponse, error) {
 	if name == "" {
 		return nil, errors.New("a key name is required")
 	}

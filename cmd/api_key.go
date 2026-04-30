@@ -3,12 +3,12 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
-func runAPIKey(cfg *config.Config) (*api.APIKeyResponse, error) {
+func runAPIKey(cfg *config.Config) (*loops.APIKeyResponse, error) {
 	return newAPIClient(cfg).GetAPIKey()
 }
 

@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/cmdutil"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
@@ -26,18 +26,18 @@ func parseDataVars(vars []string, jsonFile string) (map[string]any, error) {
 	return cmdutil.ParseKeyValuePairs("var", vars, m)
 }
 
-func attachmentFromPath(path string) (api.Attachment, error) {
+func attachmentFromPath(path string) (loops.Attachment, error) {
 	info, err := os.Stat(path)
 	if err != nil {
-		return api.Attachment{}, fmt.Errorf("attachment %q: %w", path, err)
+		return loops.Attachment{}, fmt.Errorf("attachment %q: %w", path, err)
 	}
 	if info.IsDir() {
-		return api.Attachment{}, fmt.Errorf("attachment %q: is a directory", path)
+		return loops.Attachment{}, fmt.Errorf("attachment %q: is a directory", path)
 	}
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return api.Attachment{}, fmt.Errorf("attachment %q: %w", path, err)
+		return loops.Attachment{}, fmt.Errorf("attachment %q: %w", path, err)
 	}
 
 	sniff := data
@@ -46,28 +46,28 @@ func attachmentFromPath(path string) (api.Attachment, error) {
 	}
 	contentType := http.DetectContentType(sniff)
 
-	return api.Attachment{
+	return loops.Attachment{
 		Filename:    filepath.Base(path),
 		ContentType: contentType,
 		Data:        base64.StdEncoding.EncodeToString(data),
 	}, nil
 }
 
-func runTransactionalList(cfg *config.Config, params api.PaginationParams) ([]api.TransactionalEmail, error) {
+func runTransactionalList(cfg *config.Config, params loops.PaginationParams) ([]loops.TransactionalEmail, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
 		emails, _, err := client.ListTransactional(params)
 		return emails, err
 	}
-	return api.Paginate(func(cursor string) ([]api.TransactionalEmail, *api.Pagination, error) {
-		return client.ListTransactional(api.PaginationParams{
+	return loops.Paginate(func(cursor string) ([]loops.TransactionalEmail, *loops.Pagination, error) {
+		return client.ListTransactional(loops.PaginationParams{
 			PerPage: params.PerPage,
 			Cursor:  cursor,
 		})
 	})
 }
 
-func runTransactionalSend(cfg *config.Config, req api.SendTransactionalRequest) error {
+func runTransactionalSend(cfg *config.Config, req loops.SendTransactionalRequest) error {
 	return newAPIClient(cfg).SendTransactional(req)
 }
 
@@ -97,7 +97,7 @@ var transactionalListCmd = &cobra.Command{
 
 		if isJSONOutput() {
 			if emails == nil {
-				emails = []api.TransactionalEmail{}
+				emails = []loops.TransactionalEmail{}
 			}
 			return printJSON(cmd.OutOrStdout(), emails)
 		}
@@ -137,7 +137,7 @@ func transactionalSendRunE(cmd *cobra.Command, args []string) error {
 	email, _ := cmd.Flags().GetString("email")
 	idempotencyKey, _ := cmd.Flags().GetString("idempotency-key")
 
-	req := api.SendTransactionalRequest{
+	req := loops.SendTransactionalRequest{
 		Email:           email,
 		TransactionalID: id,
 		IdempotencyKey:  idempotencyKey,
