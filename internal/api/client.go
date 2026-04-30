@@ -7,13 +7,13 @@ import (
 	"io"
 	"math/rand/v2"
 	"net/http"
-	"os"
 	"time"
 )
 
 const (
-	maxRetries = 2
-	baseDelay  = 500 * time.Millisecond
+	DefaultBaseURL = "https://app.loops.so/api/v1"
+	maxRetries     = 2
+	baseDelay      = 500 * time.Millisecond
 )
 
 var sleep = time.Sleep
@@ -35,22 +35,27 @@ type Client struct {
 	baseURL    string
 	apiKey     string
 	httpClient *http.Client
-	debug      bool
+	logger     io.Writer
 	userAgent  string
 }
 
-func NewClient(baseURL, apiKey string, debug bool) *Client {
-	return &Client{
-		baseURL:    baseURL,
+type Option func(*Client)
+
+func WithBaseURL(u string) Option           { return func(c *Client) { c.baseURL = u } }
+func WithUserAgent(ua string) Option        { return func(c *Client) { c.userAgent = ua } }
+func WithLogger(w io.Writer) Option         { return func(c *Client) { c.logger = w } }
+func WithHTTPClient(h *http.Client) Option  { return func(c *Client) { c.httpClient = h } }
+
+func NewClient(apiKey string, opts ...Option) *Client {
+	c := &Client{
+		baseURL:    DefaultBaseURL,
 		apiKey:     apiKey,
 		httpClient: &http.Client{Timeout: 5 * time.Second},
-		debug:      debug,
 		userAgent:  "loops-go/dev",
 	}
-}
-
-func (c *Client) WithUserAgent(ua string) *Client {
-	c.userAgent = ua
+	for _, opt := range opts {
+		opt(c)
+	}
 	return c
 }
 
@@ -73,20 +78,20 @@ func errorFromResponse(resp *http.Response) *APIError {
 func (c *Client) logResponse(resp *http.Response) {
 	raw, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[debug] Response: %s (body read failed: %v)\n", resp.Status, err)
+		fmt.Fprintf(c.logger, "[debug] Response: %s (body read failed: %v)\n", resp.Status, err)
 		resp.Body = io.NopCloser(bytes.NewReader(nil))
 		return
 	}
 	resp.Body = io.NopCloser(bytes.NewReader(raw))
-	fmt.Fprintf(os.Stderr, "[debug] Response: %s (%d bytes)\n", resp.Status, len(raw))
+	fmt.Fprintf(c.logger, "[debug] Response: %s (%d bytes)\n", resp.Status, len(raw))
 	if len(raw) == 0 {
 		return
 	}
 	var pretty bytes.Buffer
 	if json.Indent(&pretty, raw, "", "  ") == nil {
-		fmt.Fprintf(os.Stderr, "[debug] Body:\n%s\n", pretty.String())
+		fmt.Fprintf(c.logger, "[debug] Body:\n%s\n", pretty.String())
 	} else {
-		fmt.Fprintf(os.Stderr, "[debug] Body: %s\n", raw)
+		fmt.Fprintf(c.logger, "[debug] Body: %s\n", raw)
 	}
 }
 
@@ -116,7 +121,7 @@ func (c *Client) do(req *http.Request) (*http.Response, error) {
 			continue
 		}
 		if !isRetryable(resp.StatusCode) {
-			if c.debug {
+			if c.logger != nil {
 				c.logResponse(resp)
 			}
 			return resp, nil
@@ -135,7 +140,7 @@ func (c *Client) newRequest(method, path string, body io.Reader) (*http.Request,
 	url := fmt.Sprintf("%s%s", c.baseURL, path)
 
 	var bodyBytes []byte
-	if body != nil && c.debug {
+	if body != nil && c.logger != nil {
 		var err error
 		bodyBytes, err = io.ReadAll(body)
 		if err != nil {
@@ -154,18 +159,18 @@ func (c *Client) newRequest(method, path string, body io.Reader) (*http.Request,
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	if c.debug {
-		fmt.Fprintf(os.Stderr, "[debug] %s %s\n", method, url)
-		fmt.Fprintf(os.Stderr, "[debug] Authorization: Bearer [REDACTED]\n")
+	if c.logger != nil {
+		fmt.Fprintf(c.logger, "[debug] %s %s\n", method, url)
+		fmt.Fprintf(c.logger, "[debug] Authorization: Bearer [REDACTED]\n")
 		if req.Header.Get("Content-Type") != "" {
-			fmt.Fprintf(os.Stderr, "[debug] Content-Type: %s\n", req.Header.Get("Content-Type"))
+			fmt.Fprintf(c.logger, "[debug] Content-Type: %s\n", req.Header.Get("Content-Type"))
 		}
 		if len(bodyBytes) > 0 {
 			var pretty bytes.Buffer
 			if json.Indent(&pretty, bodyBytes, "", "  ") == nil {
-				fmt.Fprintf(os.Stderr, "[debug] Body:\n%s\n", pretty.String())
+				fmt.Fprintf(c.logger, "[debug] Body:\n%s\n", pretty.String())
 			} else {
-				fmt.Fprintf(os.Stderr, "[debug] Body: %s\n", bodyBytes)
+				fmt.Fprintf(c.logger, "[debug] Body: %s\n", bodyBytes)
 			}
 		}
 	}

@@ -19,8 +19,14 @@ var teamFlag string
 var debugFlag bool
 
 func newAPIClient(cfg *config.Config) *api.Client {
-	return api.NewClient(cfg.EndpointURL, cfg.APIKey, cfg.Debug).
-		WithUserAgent("loops-cli/" + version)
+	opts := []api.Option{
+		api.WithBaseURL(cfg.EndpointURL),
+		api.WithUserAgent("loops-cli/" + version),
+	}
+	if cfg.Debug {
+		opts = append(opts, api.WithLogger(os.Stderr))
+	}
+	return api.NewClient(cfg.APIKey, opts...)
 }
 
 func loadConfig() (*config.Config, error) {

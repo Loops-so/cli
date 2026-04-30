@@ -115,7 +115,7 @@ func TestCreateContact(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			id, err := client.CreateContact(tt.req)
 
 			if tt.wantBody != nil {
@@ -210,7 +210,7 @@ func TestDeleteContact(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			err := client.DeleteContact(tt.email, tt.userID)
 
 			if tt.wantBody != nil {
@@ -323,7 +323,7 @@ func TestUpdateContact(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			err := client.UpdateContact(tt.req)
 
 			if tt.wantBody != nil {
@@ -433,7 +433,7 @@ func TestCheckContactSuppression(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			result, err := client.CheckContactSuppression(tt.email, tt.userID)
 
 			if tt.wantQuery != "" && gotQuery != tt.wantQuery {
@@ -549,7 +549,7 @@ func TestRemoveContactSuppression(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			result, err := client.RemoveContactSuppression(tt.email, tt.userID)
 
 			if tt.wantQuery != "" && gotQuery != tt.wantQuery {
@@ -650,7 +650,7 @@ func TestFindContacts(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			contacts, err := client.FindContacts(tt.params)
 
 			if tt.wantQuery != "" && gotQuery != tt.wantQuery {

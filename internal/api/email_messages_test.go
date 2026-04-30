@@ -74,7 +74,7 @@ func TestGetEmailMessage(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			result, err := client.GetEmailMessage(tt.id)
 
 			if tt.wantAPIErr != nil {
@@ -186,7 +186,7 @@ func TestUpdateEmailMessage(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			req := UpdateEmailMessageRequest{
 				EmailMessageFields: EmailMessageFields{Subject: "Updated"},
 				Set:                map[string]bool{"subject": true},
@@ -296,7 +296,7 @@ func TestUpdateEmailMessage_RequestBody(t *testing.T) {
 			}))
 			defer server.Close()
 
-			client := NewClient(server.URL, "test-key", false)
+			client := NewClient("test-key", WithBaseURL(server.URL))
 			if _, err := client.UpdateEmailMessage("em_abc123", tt.req); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
