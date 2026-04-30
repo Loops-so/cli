@@ -21,6 +21,10 @@ var listsListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List mailing lists",
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := validatePickFlags(cmd); err != nil {
+			return err
+		}
+
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
@@ -43,15 +47,28 @@ var listsListCmd = &cobra.Command{
 			return nil
 		}
 
-		t := newStyledTable(cmd.OutOrStdout(), "ID", "NAME", "DESCRIPTION", "PUBLIC")
+		headers := []string{"ID", "NAME", "DESCRIPTION", "PUBLIC"}
+		rows := make([][]string, 0, len(lists))
 		for _, l := range lists {
-			t.Row(l.ID, l.Name, l.Description, fmt.Sprintf("%v", l.IsPublic))
+			rows = append(rows, []string{l.ID, l.Name, l.Description, fmt.Sprintf("%v", l.IsPublic)})
+		}
+
+		if isPicking(cmd) {
+			return runPicker(headers, rows, []pickBinding{
+				copyColumnBinding("enter", "copy id", "list ID", rows, 0, cmd.OutOrStdout()),
+			})
+		}
+
+		t := newStyledTable(cmd.OutOrStdout(), headers...)
+		for _, r := range rows {
+			t.Row(r...)
 		}
 		return t.Render()
 	},
 }
 
 func init() {
+	addPickFlag(listsListCmd)
 	listsCmd.AddCommand(listsListCmd)
 	rootCmd.AddCommand(listsCmd)
 }

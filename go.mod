@@ -5,6 +5,7 @@ go 1.26.2
 require (
 	charm.land/fang/v2 v2.0.1
 	charm.land/lipgloss/v2 v2.0.1
+	github.com/atotto/clipboard v0.1.4
 	github.com/charmbracelet/colorprofile v0.4.2
 	github.com/charmbracelet/x/term v0.2.2
 	github.com/spf13/cobra v1.10.2

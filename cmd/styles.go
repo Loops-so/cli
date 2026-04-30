@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"image/color"
 	"io"
 	"os"
 	"strings"
@@ -14,13 +15,24 @@ import (
 	"github.com/charmbracelet/x/term"
 )
 
-var fangColorScheme = sync.OnceValue(func() fang.ColorScheme {
-	isDark := true
-	if term.IsTerminal(os.Stdout.Fd()) {
-		isDark = lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
+var isDarkBackground = sync.OnceValue(func() bool {
+	if !term.IsTerminal(os.Stdout.Fd()) {
+		return true
 	}
-	return fang.DefaultColorScheme(lipgloss.LightDark(isDark))
+	return lipgloss.HasDarkBackground(os.Stdin, os.Stdout)
 })
+
+var fangColorScheme = sync.OnceValue(func() fang.ColorScheme {
+	return fang.DefaultColorScheme(lipgloss.LightDark(isDarkBackground()))
+})
+
+func hexColor(c color.Color) string {
+	if c == nil {
+		return ""
+	}
+	r, g, b, _ := c.RGBA()
+	return fmt.Sprintf("#%02x%02x%02x", uint8(r>>8), uint8(g>>8), uint8(b>>8))
+}
 
 type styledTable struct {
 	out io.Writer
