@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/cmdutil"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
@@ -34,7 +34,7 @@ func parseMailingLists(pairs []string) (map[string]bool, error) {
 	return m, nil
 }
 
-func runEventsSend(cfg *config.Config, req api.SendEventRequest) error {
+func runEventsSend(cfg *config.Config, req loops.SendEventRequest) error {
 	return newAPIClient(cfg).SendEvent(req)
 }
 
@@ -65,7 +65,7 @@ func eventsSendRunE(cmd *cobra.Command, args []string) error {
 	eventName := args[0]
 	idempotencyKey, _ := cmd.Flags().GetString("idempotency-key")
 
-	req := api.SendEventRequest{
+	req := loops.SendEventRequest{
 		Email:          email,
 		UserID:         userID,
 		EventName:      eventName,

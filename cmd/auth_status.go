@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -43,7 +43,7 @@ var statusCmd = &cobra.Command{
 	},
 }
 
-func runAuthStatus() (*config.Config, *api.APIKeyResponse, *config.PersistentConfig, error) {
+func runAuthStatus() (*config.Config, *loops.APIKeyResponse, *config.PersistentConfig, error) {
 	cfg, err := loadConfig()
 	if err != nil {
 		return nil, nil, nil, err

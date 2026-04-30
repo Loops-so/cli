@@ -3,12 +3,12 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
-func runListsList(cfg *config.Config) ([]api.MailingList, error) {
+func runListsList(cfg *config.Config) ([]loops.MailingList, error) {
 	return newAPIClient(cfg).ListMailingLists()
 }
 
@@ -37,7 +37,7 @@ var listsListCmd = &cobra.Command{
 
 		if isJSONOutput() {
 			if lists == nil {
-				lists = []api.MailingList{}
+				lists = []loops.MailingList{}
 			}
 			return printJSON(cmd.OutOrStdout(), lists)
 		}

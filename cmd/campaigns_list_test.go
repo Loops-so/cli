@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 )
 
 func TestRunCampaignsList(t *testing.T) {
 	t.Run("returns campaigns", func(t *testing.T) {
 		serveJSON(t, http.StatusOK, `{"pagination":{"nextCursor":""},"data":[{"campaignId":"cmp_1","emailMessageId":"em_1","name":"Spring","subject":"Hi","status":"Draft","createdAt":"2026-04-01","updatedAt":"2026-04-02"}]}`)
-		campaigns, err := runCampaignsList(cfg(t), api.PaginationParams{})
+		campaigns, err := runCampaignsList(cfg(t), loops.PaginationParams{})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -27,7 +27,7 @@ func TestRunCampaignsList(t *testing.T) {
 
 	t.Run("returns error on api failure", func(t *testing.T) {
 		serveJSON(t, http.StatusUnauthorized, `{"error":"unauthorized"}`)
-		_, err := runCampaignsList(cfg(t), api.PaginationParams{})
+		_, err := runCampaignsList(cfg(t), loops.PaginationParams{})
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}

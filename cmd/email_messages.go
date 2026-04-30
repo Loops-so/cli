@@ -11,7 +11,7 @@ import (
 	"github.com/alecthomas/chroma/v2/formatters"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/charmbracelet/colorprofile"
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
@@ -86,11 +86,11 @@ func emailMessageFieldParamsFromCmd(cmd *cobra.Command) (emailMessageFieldParams
 	return p, nil
 }
 
-func runEmailMessagesGet(cfg *config.Config, id string) (*api.EmailMessage, error) {
+func runEmailMessagesGet(cfg *config.Config, id string) (*loops.EmailMessage, error) {
 	return newAPIClient(cfg).GetEmailMessage(id)
 }
 
-func runEmailMessagesUpdate(cfg *config.Config, id string, req api.UpdateEmailMessageRequest) (*api.EmailMessage, error) {
+func runEmailMessagesUpdate(cfg *config.Config, id string, req loops.UpdateEmailMessageRequest) (*loops.EmailMessage, error) {
 	return newAPIClient(cfg).UpdateEmailMessage(id, req)
 }
 
@@ -156,8 +156,8 @@ var emailMessagesUpdateCmd = &cobra.Command{
 			return err
 		}
 
-		req := api.UpdateEmailMessageRequest{
-			EmailMessageFields: api.EmailMessageFields{
+		req := loops.UpdateEmailMessageRequest{
+			EmailMessageFields: loops.EmailMessageFields{
 				Subject:      params.Subject,
 				PreviewText:  params.PreviewText,
 				FromName:     params.FromName,
@@ -188,7 +188,7 @@ var emailMessagesUpdateCmd = &cobra.Command{
 	},
 }
 
-func printEmailMessage(cmd *cobra.Command, msg *api.EmailMessage) error {
+func printEmailMessage(cmd *cobra.Command, msg *loops.EmailMessage) error {
 	t := newStyledTable(cmd.OutOrStdout(), "FIELD", "VALUE")
 	t.Row("emailMessageId", msg.EmailMessageID)
 	t.Row("campaignId", deref(msg.CampaignID))
@@ -241,7 +241,7 @@ func lmxChromaStyle() *chroma.Style {
 	})
 }
 
-func printLmxWarnings(cmd *cobra.Command, warnings []api.LmxWarning) {
+func printLmxWarnings(cmd *cobra.Command, warnings []loops.LmxWarning) {
 	if len(warnings) == 0 {
 		return
 	}

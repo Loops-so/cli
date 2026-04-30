@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/spf13/cobra"
 )
 
@@ -10,10 +10,10 @@ func addPaginationFlags(cmd *cobra.Command) {
 	cmd.Flags().String("cursor", "", "Pagination cursor for a specific page")
 }
 
-func paginationParams(cmd *cobra.Command) api.PaginationParams {
+func paginationParams(cmd *cobra.Command) loops.PaginationParams {
 	perPage, _ := cmd.Flags().GetString("per-page")
 	cursor, _ := cmd.Flags().GetString("cursor")
-	return api.PaginationParams{
+	return loops.PaginationParams{
 		PerPage: perPage,
 		Cursor:  cursor,
 	}

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/cmdutil"
 	"github.com/zalando/go-keyring"
 )
@@ -91,7 +91,7 @@ func serveEventsSend(t *testing.T, status int, body string, check func(*http.Req
 func TestEventsSend(t *testing.T) {
 	t.Run("happy path with email", func(t *testing.T) {
 		serveJSON(t, http.StatusOK, `{"success":true}`)
-		err := runEventsSend(cfg(t), api.SendEventRequest{
+		err := runEventsSend(cfg(t), loops.SendEventRequest{
 			Email:     "user@example.com",
 			EventName: "user-signed-up",
 		})
@@ -102,7 +102,7 @@ func TestEventsSend(t *testing.T) {
 
 	t.Run("happy path with userId", func(t *testing.T) {
 		serveJSON(t, http.StatusOK, `{"success":true}`)
-		err := runEventsSend(cfg(t), api.SendEventRequest{
+		err := runEventsSend(cfg(t), loops.SendEventRequest{
 			UserID:    "user-123",
 			EventName: "user-signed-up",
 		})
@@ -113,7 +113,7 @@ func TestEventsSend(t *testing.T) {
 
 	t.Run("api error", func(t *testing.T) {
 		serveJSON(t, http.StatusBadRequest, `{"error":"invalid event"}`)
-		err := runEventsSend(cfg(t), api.SendEventRequest{
+		err := runEventsSend(cfg(t), loops.SendEventRequest{
 			Email:     "user@example.com",
 			EventName: "bad-event",
 		})
@@ -193,7 +193,7 @@ func TestEventsSend(t *testing.T) {
 			t.Fatalf("unexpected error: %v", err)
 		}
 
-		err = runEventsSend(cfg(t), api.SendEventRequest{
+		err = runEventsSend(cfg(t), loops.SendEventRequest{
 			Email:             "user@example.com",
 			EventName:         "upgrade",
 			ContactProperties: contactProps,
@@ -229,7 +229,7 @@ func TestEventsSend(t *testing.T) {
 		serveEventsSend(t, http.StatusOK, `{"success":true}`, func(r *http.Request) {
 			capturedKey = r.Header.Get("Idempotency-Key")
 		})
-		err := runEventsSend(cfg(t), api.SendEventRequest{
+		err := runEventsSend(cfg(t), loops.SendEventRequest{
 			Email:          "user@example.com",
 			EventName:      "test",
 			IdempotencyKey: "my-key-123",
@@ -247,7 +247,7 @@ func TestEventsSend(t *testing.T) {
 		var buf bytes.Buffer
 		t.Setenv("OUTPUT_FORMAT", "json")
 
-		err := runEventsSend(cfg(t), api.SendEventRequest{
+		err := runEventsSend(cfg(t), loops.SendEventRequest{
 			Email:     "user@example.com",
 			EventName: "test",
 		})

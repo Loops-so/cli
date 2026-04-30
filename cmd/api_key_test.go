@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 )
 
 func TestRunAPIKey(t *testing.T) {
@@ -15,7 +15,7 @@ func TestRunAPIKey(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		want := &api.APIKeyResponse{TeamName: "Acme Corp"}
+		want := &loops.APIKeyResponse{TeamName: "Acme Corp"}
 		if !reflect.DeepEqual(result, want) {
 			t.Errorf("got %+v, want %+v", result, want)
 		}

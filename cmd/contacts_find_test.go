@@ -5,13 +5,13 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 )
 
 func TestRunContactsFind(t *testing.T) {
 	body := `[{"id":"cnt_abc123","email":"bob@example.com","firstName":"Bob","lastName":"Smith","source":"api","subscribed":true,"userGroup":"default","userId":"user_123","mailingLists":{},"optInStatus":"accepted","company":"Loops","plan":"pro"}]`
 
-	assertContact := func(t *testing.T, got api.Contact) {
+	assertContact := func(t *testing.T, got loops.Contact) {
 		t.Helper()
 		if got.ID != "cnt_abc123" ||
 			got.Email != "bob@example.com" ||

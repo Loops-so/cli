@@ -3,12 +3,12 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
-func runContactPropertiesList(cfg *config.Config, customOnly bool) ([]api.ContactProperty, error) {
+func runContactPropertiesList(cfg *config.Config, customOnly bool) ([]loops.ContactProperty, error) {
 	return newAPIClient(cfg).ListContactProperties(customOnly)
 }
 
@@ -43,7 +43,7 @@ var contactPropertiesListCmd = &cobra.Command{
 
 		if isJSONOutput() {
 			if props == nil {
-				props = []api.ContactProperty{}
+				props = []loops.ContactProperty{}
 			}
 			return printJSON(cmd.OutOrStdout(), props)
 		}

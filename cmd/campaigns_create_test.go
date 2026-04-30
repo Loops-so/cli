@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 )
 
 func TestRunCampaignsCreate(t *testing.T) {
@@ -21,7 +21,7 @@ func TestRunCampaignsCreate(t *testing.T) {
 
 	t.Run("returns response on success", func(t *testing.T) {
 		serveJSON(t, http.StatusCreated, body)
-		resp, err := runCampaignsCreate(cfg(t), api.CreateCampaignRequest{Name: "Spring"})
+		resp, err := runCampaignsCreate(cfg(t), loops.CreateCampaignRequest{Name: "Spring"})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -38,7 +38,7 @@ func TestRunCampaignsCreate(t *testing.T) {
 
 	t.Run("returns error on non-201 response", func(t *testing.T) {
 		serveJSON(t, http.StatusBadRequest, `{"success":false,"message":"name is required"}`)
-		_, err := runCampaignsCreate(cfg(t), api.CreateCampaignRequest{})
+		_, err := runCampaignsCreate(cfg(t), loops.CreateCampaignRequest{})
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}

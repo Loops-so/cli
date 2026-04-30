@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 )
 
 func TestRunContactPropertiesCreate(t *testing.T) {
@@ -33,7 +33,7 @@ func TestRunContactPropertiesList(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		want := []api.ContactProperty{
+		want := []loops.ContactProperty{
 			{Key: "firstName", Label: "First name", Type: "string"},
 			{Key: "score", Label: "Score", Type: "number"},
 		}

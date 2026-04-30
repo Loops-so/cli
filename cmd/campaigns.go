@@ -3,23 +3,23 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
 	"github.com/spf13/cobra"
 )
 
-func runCampaignsGet(cfg *config.Config, id string) (*api.Campaign, error) {
+func runCampaignsGet(cfg *config.Config, id string) (*loops.Campaign, error) {
 	return newAPIClient(cfg).GetCampaign(id)
 }
 
-func runCampaignsList(cfg *config.Config, params api.PaginationParams) ([]api.CampaignListItem, error) {
+func runCampaignsList(cfg *config.Config, params loops.PaginationParams) ([]loops.CampaignListItem, error) {
 	client := newAPIClient(cfg)
 	if params.Cursor != "" {
 		campaigns, _, err := client.ListCampaigns(params)
 		return campaigns, err
 	}
-	return api.Paginate(func(cursor string) ([]api.CampaignListItem, *api.Pagination, error) {
-		return client.ListCampaigns(api.PaginationParams{
+	return loops.Paginate(func(cursor string) ([]loops.CampaignListItem, *loops.Pagination, error) {
+		return client.ListCampaigns(loops.PaginationParams{
 			PerPage: params.PerPage,
 			Cursor:  cursor,
 		})
@@ -52,7 +52,7 @@ var campaignsListCmd = &cobra.Command{
 
 		if isJSONOutput() {
 			if campaigns == nil {
-				campaigns = []api.CampaignListItem{}
+				campaigns = []loops.CampaignListItem{}
 			}
 			return printJSON(cmd.OutOrStdout(), campaigns)
 		}
@@ -91,7 +91,7 @@ var campaignsListCmd = &cobra.Command{
 	},
 }
 
-func runCampaignsCreate(cfg *config.Config, req api.CreateCampaignRequest) (*api.CampaignCreateResponse, error) {
+func runCampaignsCreate(cfg *config.Config, req loops.CreateCampaignRequest) (*loops.CampaignCreateResponse, error) {
 	return newAPIClient(cfg).CreateCampaign(req)
 }
 
@@ -106,7 +106,7 @@ var campaignsCreateCmd = &cobra.Command{
 			return err
 		}
 
-		resp, err := runCampaignsCreate(cfg, api.CreateCampaignRequest{Name: name})
+		resp, err := runCampaignsCreate(cfg, loops.CreateCampaignRequest{Name: name})
 		if err != nil {
 			return err
 		}
@@ -120,7 +120,7 @@ var campaignsCreateCmd = &cobra.Command{
 	},
 }
 
-func runCampaignsUpdate(cfg *config.Config, id string, req api.UpdateCampaignRequest) (*api.Campaign, error) {
+func runCampaignsUpdate(cfg *config.Config, id string, req loops.UpdateCampaignRequest) (*loops.Campaign, error) {
 	return newAPIClient(cfg).UpdateCampaign(id, req)
 }
 
@@ -136,7 +136,7 @@ var campaignsUpdateCmd = &cobra.Command{
 			return err
 		}
 
-		c, err := runCampaignsUpdate(cfg, args[0], api.UpdateCampaignRequest{Name: name})
+		c, err := runCampaignsUpdate(cfg, args[0], loops.UpdateCampaignRequest{Name: name})
 		if err != nil {
 			return err
 		}

@@ -5,7 +5,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/loops-so/cli/internal/api"
+	"github.com/loops-so/loops-go"
 )
 
 func TestRunListsList(t *testing.T) {
@@ -15,7 +15,7 @@ func TestRunListsList(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		want := []api.MailingList{
+		want := []loops.MailingList{
 			{ID: "list_1", Name: "Newsletter", Description: "Weekly updates", IsPublic: true},
 		}
 		if !reflect.DeepEqual(lists, want) {
