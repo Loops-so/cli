@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"charm.land/fang/v2"
-	"github.com/loops-so/loops-go"
 	"github.com/loops-so/cli/internal/config"
+	"github.com/loops-so/loops-go"
 	"github.com/spf13/cobra"
 )
 
@@ -68,6 +68,8 @@ func Execute() {
 			updateCheckCancel()
 		}
 	}()
+
+	wrapArgsWithNames(rootCmd)
 
 	err := fang.Execute(
 		context.Background(),
