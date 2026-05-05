@@ -27,8 +27,9 @@ func runComponentsList(cfg *config.Config, params loops.PaginationParams) ([]loo
 }
 
 var componentsCmd = &cobra.Command{
-	Use:   "components",
-	Short: "Manage components",
+	Use:    "components",
+	Short:  "Manage components",
+	Hidden: true,
 }
 
 var componentsListCmd = &cobra.Command{
