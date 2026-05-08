@@ -21,6 +21,7 @@ var loginCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
 
+		fmt.Fprintln(os.Stderr, "Get your API key at https://app.loops.so/settings?page=api")
 		fmt.Fprint(os.Stderr, "Enter your API key: ")
 		raw, err := term.ReadPassword(int(os.Stdin.Fd()))
 		fmt.Fprintln(os.Stderr)
