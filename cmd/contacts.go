@@ -104,10 +104,6 @@ var contactsFindCmd = &cobra.Command{
 		email, _ := cmd.Flags().GetString("email")
 		userID, _ := cmd.Flags().GetString("user-id")
 
-		if (email == "") == (userID == "") {
-			return fmt.Errorf("exactly one of --email or --user-id is required")
-		}
-
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
@@ -221,10 +217,6 @@ var contactsUpdateCmd = &cobra.Command{
 		email, _ := cmd.Flags().GetString("email")
 		userID, _ := cmd.Flags().GetString("user-id")
 
-		if email == "" && userID == "" {
-			return fmt.Errorf("at least one of --email or --user-id is required")
-		}
-
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
@@ -268,10 +260,6 @@ var contactsDeleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		email, _ := cmd.Flags().GetString("email")
 		userID, _ := cmd.Flags().GetString("user-id")
-
-		if (email == "") == (userID == "") {
-			return fmt.Errorf("exactly one of --email or --user-id is required")
-		}
 
 		cfg, err := loadConfig()
 		if err != nil {
@@ -323,6 +311,8 @@ func formatCustomValue(v any) string {
 func init() {
 	contactsFindCmd.Flags().StringP("email", "e", "", "Contact email address")
 	contactsFindCmd.Flags().StringP("user-id", "u", "", "Contact user ID")
+	contactsFindCmd.MarkFlagsOneRequired("email", "user-id")
+	contactsFindCmd.MarkFlagsMutuallyExclusive("email", "user-id")
 	contactsCmd.AddCommand(contactsFindCmd)
 
 	contactsCreateCmd.Flags().StringP("email", "e", "", "Contact email address")
@@ -335,10 +325,13 @@ func init() {
 	contactsUpdateCmd.Flags().StringP("email", "e", "", "Contact email address")
 	contactsUpdateCmd.Flags().StringP("user-id", "u", "", "User ID")
 	addContactFieldFlags(contactsUpdateCmd)
+	contactsUpdateCmd.MarkFlagsOneRequired("email", "user-id")
 	contactsCmd.AddCommand(contactsUpdateCmd)
 
 	contactsDeleteCmd.Flags().StringP("email", "e", "", "Contact email address")
 	contactsDeleteCmd.Flags().StringP("user-id", "u", "", "Contact user ID")
+	contactsDeleteCmd.MarkFlagsOneRequired("email", "user-id")
+	contactsDeleteCmd.MarkFlagsMutuallyExclusive("email", "user-id")
 	contactsCmd.AddCommand(contactsDeleteCmd)
 
 	rootCmd.AddCommand(contactsCmd)

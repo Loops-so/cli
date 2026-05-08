@@ -26,10 +26,6 @@ var contactsSuppressionCheckCmd = &cobra.Command{
 		email, _ := cmd.Flags().GetString("email")
 		userID, _ := cmd.Flags().GetString("user-id")
 
-		if (email == "") == (userID == "") {
-			return fmt.Errorf("exactly one of --email or --user-id is required")
-		}
-
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
@@ -68,10 +64,6 @@ var contactsSuppressionRemoveCmd = &cobra.Command{
 		email, _ := cmd.Flags().GetString("email")
 		userID, _ := cmd.Flags().GetString("user-id")
 
-		if (email == "") == (userID == "") {
-			return fmt.Errorf("exactly one of --email or --user-id is required")
-		}
-
 		cfg, err := loadConfig()
 		if err != nil {
 			return err
@@ -95,10 +87,14 @@ var contactsSuppressionRemoveCmd = &cobra.Command{
 func init() {
 	contactsSuppressionCheckCmd.Flags().StringP("email", "e", "", "Contact email address")
 	contactsSuppressionCheckCmd.Flags().StringP("user-id", "u", "", "Contact user ID")
+	contactsSuppressionCheckCmd.MarkFlagsOneRequired("email", "user-id")
+	contactsSuppressionCheckCmd.MarkFlagsMutuallyExclusive("email", "user-id")
 	contactsSuppressionCmd.AddCommand(contactsSuppressionCheckCmd)
 
 	contactsSuppressionRemoveCmd.Flags().StringP("email", "e", "", "Contact email address")
 	contactsSuppressionRemoveCmd.Flags().StringP("user-id", "u", "", "Contact user ID")
+	contactsSuppressionRemoveCmd.MarkFlagsOneRequired("email", "user-id")
+	contactsSuppressionRemoveCmd.MarkFlagsMutuallyExclusive("email", "user-id")
 	contactsSuppressionCmd.AddCommand(contactsSuppressionRemoveCmd)
 
 	contactsCmd.AddCommand(contactsSuppressionCmd)

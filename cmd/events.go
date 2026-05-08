@@ -58,9 +58,6 @@ func eventsSendRunE(cmd *cobra.Command, args []string) error {
 
 	email, _ := cmd.Flags().GetString("email")
 	userID, _ := cmd.Flags().GetString("user-id")
-	if email == "" && userID == "" {
-		return fmt.Errorf("at least one of --email or --user-id is required")
-	}
 
 	eventName := args[0]
 	idempotencyKey, _ := cmd.Flags().GetString("idempotency-key")
@@ -123,6 +120,7 @@ func addEventsSendFlags(cmd *cobra.Command) {
 
 func init() {
 	addEventsSendFlags(eventsSendCmd)
+	eventsSendCmd.MarkFlagsOneRequired("email", "user-id")
 	eventsCmd.AddCommand(eventsSendCmd)
 	rootCmd.AddCommand(eventsCmd)
 }
