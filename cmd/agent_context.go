@@ -89,9 +89,9 @@ func collectRootPersistentFlags(root *cobra.Command) []Flag {
 func walkChildren(parent *cobra.Command, parentPath []string, rootPersistent map[string]struct{}) []Command {
 	out := []Command{}
 	for _, c := range parent.Commands() {
-		// filter out help, completion, man commands that are added by cobra and fang
+		// filter out commands that arent useful for agents
 		switch c.Name() {
-		case "help", "completion", "man":
+		case "help", "completion", "man", "spam":
 			continue
 		}
 		path := append(append([]string{}, parentPath...), c.Name())

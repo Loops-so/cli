@@ -144,12 +144,12 @@ func TestExtractFlagGroups_AllAnnotationKeys(t *testing.T) {
 
 func TestBuildAgentContext_HiddenCommands(t *testing.T) {
 	ctx := buildAgentContext(rootCmd)
-	spam := findAgentCommand(ctx.Commands, "spam")
+	spam := findAgentCommand(ctx.Commands, "campaigns")
 	if spam == nil {
-		t.Fatal("spam not found in output (hidden commands should still be included)")
+		t.Fatal("campaigns not found in output (hidden commands should still be included)")
 	}
 	if !spam.Hidden {
-		t.Error("spam should be hidden=true")
+		t.Error("campaigns should be hidden=true")
 	}
 }
 
