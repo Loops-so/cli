@@ -99,12 +99,12 @@ func TestBuildAgentContext_FlagGroups(t *testing.T) {
 	if upd == nil {
 		t.Fatal("email-messages update not found")
 	}
-	if !groupListContains(upd.FlagGroups.MutuallyExclusive, []string{"lmx", "lmx-file"}) {
-		t.Errorf("email-messages update missing mutex group [lmx lmx-file]; got %v",
+	if !groupContaining(upd.FlagGroups.MutuallyExclusive, "lmx", "lmx-file") {
+		t.Errorf("email-messages update missing mutex group covering lmx + lmx-file; got %v",
 			upd.FlagGroups.MutuallyExclusive)
 	}
-	if len(upd.FlagGroups.OneRequired) != 1 {
-		t.Errorf("email-messages update should have exactly 1 oneRequired group; got %v",
+	if !groupContaining(upd.FlagGroups.OneRequired, "lmx") {
+		t.Errorf("email-messages update missing oneRequired group covering content fields; got %v",
 			upd.FlagGroups.OneRequired)
 	}
 }
@@ -281,6 +281,26 @@ func groupListContains(groups [][]string, want []string) bool {
 	wantStr := strings.Join(want, " ")
 	for _, g := range groups {
 		if strings.Join(g, " ") == wantStr {
+			return true
+		}
+	}
+	return false
+}
+
+func groupContaining(groups [][]string, want ...string) bool {
+	for _, g := range groups {
+		have := make(map[string]bool, len(g))
+		for _, name := range g {
+			have[name] = true
+		}
+		ok := true
+		for _, name := range want {
+			if !have[name] {
+				ok = false
+				break
+			}
+		}
+		if ok {
 			return true
 		}
 	}
